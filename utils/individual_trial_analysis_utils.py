@@ -2,6 +2,7 @@ import numpy as np
 from scipy import stats
 import matplotlib.pyplot as plt
 import peakutils
+import pandas as pd
 
 
 class HeatMapParams(object):
@@ -152,37 +153,14 @@ def get_peak_each_trial(sorted_traces, time_points, sorted_other_events, ipsi_or
     return flat_peaks
 
 
-class RawTracesZScored(object):
+class SessionData(object):
     def __init__(self, fiber_side, mouse_id, date):
         self.mouse = mouse_id
         self.fiber_side = fiber_side
         self.date = date
-
-        fiber_options = np.array(['left', 'right'])
-        fiber_side_numeric = (np.where(fiber_options == fiber_side)[0] + 1)[0]
-        contra_fiber_side_numeric = (np.where(fiber_options != fiber_side)[0] + 1)[0]
-
-        state_type_of_interest = 5
-        outcome = 1
-        last_outcome = 0 # NOT USED CURRENLY
-        no_repeats = 1
-        last_response = 0
-        align_to = 'Time start'
-        instance = -1
-        plot_range = [-2,3]
-        first_choice_correct = 1
-
-        response = fiber_side_numeric
-        first_choice = fiber_side_numeric
-        self.ipsi_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
-                                         last_outcome, first_choice_correct, align_to, instance, no_repeats, plot_range)
-        contra_fiber_side_numeric = (np.where(fiber_options != fiber_side)[0] + 1)[0]
-        response = contra_fiber_side_numeric
-        first_choice = contra_fiber_side_numeric
-        self.contra_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
-                                           last_outcome, first_choice_correct, align_to, instance, no_repeats,
-                                           plot_range)
-
+        self.choice_data = None
+        self.cue_data = None
+        self.reward_data = None
 
     def get_reaction_times(self, dff, trial_data):
         self.ipsi_reaction_times, state_name, title, ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
@@ -190,10 +168,25 @@ class RawTracesZScored(object):
         self.contra_reaction_times, state_name, title, contra_sorted_next_poke, self.contra_trial_nums = find_and_z_score_traces(
         trial_data, dff, self.ipsi_params, sort=True, get_photometry_data=False)
 
-    def get_choice_responses(self, dff, trial_data):
+
+    def get_peaks(self, dff, trial_data):
+        time_points, ipsi_mean_trace, ipsi_sorted_traces, self.ipsi_reaction_times, state_name, title, ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
+        trial_data, dff, self.ipsi_params, sort=False)
+        ipsi_trials_peaks = get_peak_each_trial(ipsi_sorted_traces, time_points,  self.ipsi_reaction_times, 'ipsi')
+        self.ipsi_trials_peaks = ipsi_trials_peaks
+        time_points, contra_mean_trace, contra_sorted_traces, self.contra_reaction_times, state_name, title, contra_sorted_next_poke, self.contra_trial_nums  = find_and_z_score_traces(
+        trial_data, dff, self.contra_params, sort=False)
+        contra_trials_peaks = get_peak_each_trial(contra_sorted_traces, time_points, self.contra_reaction_times, 'contra')
+        self.contra_trials_peaks = contra_trials_peaks
+
+    def get_choice_responses(self):
+        self.choice_data = ChoiceAlignedData(self)
+
+class ChoiceAlignedData(object):
+    def __init__(self, session_data):
         fiber_options = np.array(['left', 'right'])
-        fiber_side_numeric = (np.where(fiber_options == self.fiber_side)[0] + 1)[0]
-        contra_fiber_side_numeric = (np.where(fiber_options != self.fiber_side)[0] + 1)[0]
+        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
+        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
 
         state_type_of_interest = 5
         outcome = 1
@@ -207,32 +200,24 @@ class RawTracesZScored(object):
 
         response = fiber_side_numeric
         first_choice = fiber_side_numeric
-        ipsi_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
+        self.ipsi_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
                                          last_outcome, first_choice_correct, align_to, instance, no_repeats, plot_range)
-        contra_fiber_side_numeric = (np.where(fiber_options != self.fiber_side)[0] + 1)[0]
 
         response = contra_fiber_side_numeric
         first_choice = contra_fiber_side_numeric
-        contra_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
+        self.contra_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
                                            last_outcome, first_choice_correct, align_to, instance, no_repeats,
                                            plot_range)
-        time_points, self.ipsi_mean_trace, self.ipsi_sorted_traces, self.ipsi_reaction_times, self.state_name, title, self.ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
-            trial_data, dff, ipsi_params, sort=False)
-        time_points, self.contra_mean_trace, self.contra_sorted_traces, self.contra_reaction_times, self.state_name, title, self.contra_sorted_next_poke, self.contra_trial_nums = find_and_z_score_traces(
-            trial_data, dff, contra_params, sort=False)
 
-    def get_peaks(self, dff, trial_data):
-        time_points, ipsi_mean_trace, ipsi_sorted_traces, self.ipsi_reaction_times, state_name, title, ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
-        trial_data, dff, self.ipsi_params, sort=False)
-        ipsi_trials_peaks = get_peak_each_trial(ipsi_sorted_traces, time_points,  self.ipsi_reaction_times, 'ipsi')
-        self.ipsi_trials_peaks = ipsi_trials_peaks
-        time_points, contra_mean_trace, contra_sorted_traces, self.contra_reaction_times, state_name, title, contra_sorted_next_poke, self.contra_trial_nums  = find_and_z_score_traces(
-        trial_data, dff, self.contra_params, sort=False)
-        contra_trials_peaks = get_peak_each_trial(contra_sorted_traces, time_points, self.contra_reaction_times, 'contra')
-        self.contra_trials_peaks = contra_trials_peaks
-
-
-
+        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
+        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+        dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
+        dff = np.load(saving_folder + dff_trace_filename)
+        self.ipsi_time_points, self.ipsi_mean_trace, self.ipsi_sorted_traces, self.ipsi_reaction_times, self.state_name, title, self.ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
+            trial_data, dff, self.ipsi_params, sort=False)
+        self.contra_time_points, self.contra_mean_trace, self.contra_sorted_traces, self.contra_reaction_times, self.state_name, title, self.contra_sorted_next_poke, self.contra_trial_nums = find_and_z_score_traces(
+            trial_data, dff, self.contra_params, sort=False)
 
 
 
