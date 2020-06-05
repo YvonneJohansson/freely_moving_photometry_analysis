@@ -3,7 +3,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib import colors, cm
 from tqdm import tqdm
-
+from utils.individual_trial_analysis_utils import SessionData, ChoiceAlignedData
 
 class HeatMapParams(object):
     def __init__(self, state_type_of_interest, response, first_choice, last_response, outcome, last_outcome,first_choice_correct, align_to, instance, no_repeats, plot_range):
@@ -122,53 +122,42 @@ def get_mean_and_sem(trial_data, demod_signal, params, norm_window=8, sort=False
     print(sorted_last_event[-1])
     return x_vals, y_vals, sem, sorted_traces, sorted_last_event, state_name, title, sorted_next_poke
 
-def heat_map_and_mean(trial_data, demod_signal, params, mouse, date):
-    x_vals, y_vals, sem, sorted_traces, sorted_last_event, state_name, title, sorted_next_poke = get_mean_and_sem(trial_data, demod_signal, params, sort=False, error_bar_method='ci')
-    
-    num_state_types = trial_data['State type'].unique().shape[0]
-    fig, axs = plt.subplots(1, ncols=2, figsize=(10, 8))
-    fig.subplots_adjust(hspace=0.5, wspace=0.2)
-    
-    fig.suptitle(title, fontsize=16)
-    fig.text(0.06, 0.02, mouse + ' ' + date, fontsize=12)
 
-    axs[0].title.set_text(state_name + ' mean')
-    axs[0].plot(x_vals, y_vals,lw=3,color='#3F888F')
-    axs[0].fill_between(x_vals, sem[0], sem[1], alpha=0.5, facecolor='#7FB5B5', linewidth=0)
-    
-    #colours for individual trial plotting
-    trial_nums_to_plot = sorted_traces.shape[0]
-    colours = cm.cool(np.linspace(0, 1, trial_nums_to_plot))
-    
-    #for trace_num in range(trial_nums_to_plot):
-    #    axs[0].plot(x_vals, sorted_traces[trace_num,:],alpha=0.5, color=colours[trace_num], lw=0.8)
-    
+def heat_map_and_mean(aligned_session_data, error_bar_method='sem'):
+    fig, axs = plt.subplots(1, ncols=4, figsize=(15, 8))
+    fig.subplots_adjust(hspace=0.5, wspace=0.2)
+
+    axs[0].plot(aligned_session_data.ipsi_time_points, aligned_session_data.ipsi_mean_trace, lw=3, color='#3F888F')
+    if error_bar_method is not None:
+        error_bar_lower, error_bar_upper = calculate_error_bars(aligned_session_data.ipsi_mean_trace, aligned_session_data.ipsi_sorted_traces, error_bar_method=error_bar_method)
+        axs[0].fill_between(aligned_session_data.ipsi_time_points, error_bar_lower, error_bar_upper, alpha=0.5, facecolor='#7FB5B5', linewidth=0)
+
     axs[0].axvline(0, color='k', linewidth=2)
-    axs[0].set_xlim(params.plot_range)
-    axs[0].set_ylim([-1, 2.2])
+    axs[0].set_xlim(aligned_session_data.ipsi_params.plot_range)
+    # axs[0].set_ylim([-1, 2.2])
     axs[0].set_xlabel('Time (s)')
     axs[0].set_ylabel('z-score')
 
-    heat_im = axs[1].imshow(sorted_traces, aspect='auto', extent=[-10, 10, sorted_traces.shape[0], 0], cmap='jet')
+    heat_im = axs[1].imshow(aligned_session_data.ipsi_sorted_traces, aspect='auto', extent=[-10, 10, aligned_session_data.ipsi_sorted_traces.shape[0], 0], cmap='jet')
     
     axs[1].axvline(0, color='w', linewidth=2)
-    axs[1].scatter(sorted_last_event, np.arange(sorted_last_event.shape[0]) + 0.5, color='w', s=6)
-    axs[1].scatter(sorted_next_poke, np.arange(sorted_next_poke.shape[0]) + 0.5, color='k', s=6)
+    axs[1].scatter(aligned_session_data.ipsi_reaction_times, np.arange(aligned_session_data.ipsi_reaction_times.shape[0]) + 0.5, color='w', s=6)
+    axs[1].scatter(aligned_session_data.ipsi_sorted_next_poke, np.arange(aligned_session_data.ipsi_sorted_next_poke.shape[0]) + 0.5, color='k', s=6)
     axs[1].tick_params(labelsize=10)
-    axs[1].title.set_text(state_name + ' heatmap')
-    axs[1].set_xlim(params.plot_range)
-    axs[1].set_ylim([sorted_traces.shape[0], 0])
+    axs[1].set_xlim(aligned_session_data.ipsi_params.plot_range)
+    axs[1].set_ylim([aligned_session_data.ipsi_sorted_traces.shape[0], 0])
     axs[1].set_xlabel('Time (s)')
     axs[1].set_ylabel('Trial number (sorted)')
-    vmin = sorted_traces.min()
-    vmax = sorted_traces.max()
+    vmin = aligned_session_data.ipsi_sorted_traces.min()
+    vmax = aligned_session_data.ipsi_sorted_traces.max()
     edge = max(abs(vmin), abs(vmax))
     norm = colors.Normalize(vmin=vmin, vmax=vmax)
     heat_im.set_norm(norm)
     fig.colorbar(heat_im, ax=axs[1], orientation='horizontal', fraction=.1, label='z-score')
     
     #axs[0].set_ylim(-0.01,0.1)
-    return sorted_traces, x_vals, y_vals, sem
+    plt.show()
+    return fig, axs
 
 
 def multiple_conditions_plot(trial_data, demod_signal, mouse, date, *param_set):
@@ -200,6 +189,17 @@ def multiple_conditions_plot(trial_data, demod_signal, mouse, date, *param_set):
         axs.legend(frameon=False)
     fig.text(0.06, 0.02, mouse + ' ' + date, fontsize=12)
     return sorted_traces
+
+
+def calculate_error_bars(mean_trace, data, error_bar_method='sem'):
+    if error_bar_method == 'sem':
+        std = np.std(data, axis=0)
+        lower_bound = mean_trace - std
+        upper_bound = mean_trace + std
+    elif error_bar_method == 'ci':
+        lower_bound, upper_bound = bootstrap(data)
+    return lower_bound, upper_bound
+
 
 def bootstrap(data, n_boot=10000, ci=68):
     """Helper function for lineplot_boot. Bootstraps confidence intervals for plotting time series.
