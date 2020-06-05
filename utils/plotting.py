@@ -123,19 +123,20 @@ def get_mean_and_sem(trial_data, demod_signal, params, norm_window=8, sort=False
     return x_vals, y_vals, sem, sorted_traces, sorted_last_event, state_name, title, sorted_next_poke
 
 
-def heat_map_and_mean(aligned_session_data, error_bar_method='sem'):
-    fig, axs = plt.subplots(1, ncols=4, figsize=(15, 8))
-    fig.subplots_adjust(hspace=0.5, wspace=0.2)
+def heat_map_and_mean(aligned_session_data, error_bar_method='sem', sort=False):
+    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(5.5, 5.5))
 
-    plot_one_side(aligned_session_data.ipsi_data, fig, axs[0], axs[1], error_bar_method='sem')
-    plot_one_side(aligned_session_data.contra_data, fig, axs[2], axs[3], error_bar_method='sem')
 
+    plot_one_side(aligned_session_data.ipsi_data, fig, axs[0, 0], axs[0, 1], error_bar_method='sem', sort=sort)
+    plot_one_side(aligned_session_data.contra_data, fig, axs[1, 0], axs[1, 1], error_bar_method='sem', sort=sort)
+    fig.tight_layout(pad=1)
     plt.show()
     return fig, axs
 
 
-def plot_one_side(one_side_data, fig,  ax1, ax2, error_bar_method='sem'):
+def plot_one_side(one_side_data, fig,  ax1, ax2, error_bar_method='sem', sort=False):
     ax1.plot(one_side_data.time_points, one_side_data.mean_trace, lw=3, color='#3F888F')
+
     if error_bar_method is not None:
         error_bar_lower, error_bar_upper = calculate_error_bars(one_side_data.mean_trace,
                                                                 one_side_data.sorted_traces,
@@ -149,14 +150,20 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, error_bar_method='sem'):
     ax1.set_xlabel('Time (s)')
     ax1.set_ylabel('z-score')
 
+    if sort:
+        arr1inds = one_side_data.reaction_times.argsort()
+        one_side_data.reaction_times = one_side_data.reaction_times[arr1inds[::-1]]
+        one_side_data.sorted_traces = one_side_data.sorted_traces[arr1inds[::-1]]
+        one_side_data.sorted_next_poke = one_side_data.sorted_next_poke[arr1inds[::-1]]
+
     heat_im = ax2.imshow(one_side_data.sorted_traces, aspect='auto',
                             extent=[-10, 10, one_side_data.sorted_traces.shape[0], 0], cmap='jet')
 
     ax2.axvline(0, color='w', linewidth=2)
     ax2.scatter(one_side_data.reaction_times,
-                   np.arange(one_side_data.reaction_times.shape[0]) + 0.5, color='w', s=6)
+                   np.arange(one_side_data.reaction_times.shape[0]) + 0.5, color='w', s=2)
     ax2.scatter(one_side_data.sorted_next_poke,
-                   np.arange(one_side_data.sorted_next_poke.shape[0]) + 0.5, color='k', s=6)
+                   np.arange(one_side_data.sorted_next_poke.shape[0]) + 0.5, color='k', s=2)
     ax2.tick_params(labelsize=10)
     ax2.set_xlim(one_side_data.params.plot_range)
     ax2.set_ylim([one_side_data.sorted_traces.shape[0], 0])
@@ -167,7 +174,7 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, error_bar_method='sem'):
     edge = max(abs(vmin), abs(vmax))
     norm = colors.Normalize(vmin=vmin, vmax=vmax)
     heat_im.set_norm(norm)
-    fig.colorbar(heat_im, ax=ax2, orientation='horizontal', fraction=.1, label='z-score')
+    fig.colorbar(heat_im, ax=ax2, orientation='vertical', fraction=.1, label='z-score')
 
 
 def multiple_conditions_plot(trial_data, demod_signal, mouse, date, *param_set):

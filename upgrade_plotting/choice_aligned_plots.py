@@ -11,4 +11,4 @@ for date in dates:
     save_filename = saving_folder + choice_aligned_filename
     session_data = pickle.load(open(save_filename, "rb"))
     choice_data = session_data.choice_data
-    heat_map_and_mean(choice_data)
+    heat_map_and_mean(choice_data, sort=True)
