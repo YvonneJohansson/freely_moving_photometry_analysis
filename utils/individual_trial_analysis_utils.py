@@ -6,19 +6,18 @@ import pandas as pd
 
 
 class HeatMapParams(object):
-    def __init__(self, state_type_of_interest, response, first_choice, last_response, outcome, last_outcome,first_choice_correct, align_to, instance, no_repeats, plot_range):
-
-        self.state = state_type_of_interest
-        self.outcome = outcome
-        #self.last_outcome = last_outcome
+    def __init__(self, params, response, first_choice):
+        self.state = params['state_type_of_interest']
+        self.outcome = params['outcome']
+        #self.last_outcome = params['last_outcome']
         self.response = response
-        self.last_response = last_response
-        self.align_to = align_to
-        self.other_time_point = np.array(['Time start', 'Time end'])[np.where(np.array(['Time start', 'Time end']) != align_to)]
-        self.instance = instance
-        self.plot_range = plot_range
-        self.no_repeats = no_repeats
-        self.first_choice_correct = first_choice_correct
+        self.last_response = params['last_response']
+        self.align_to = params['align_to']
+        self.other_time_point = np.array(['Time start', 'Time end'])[np.where(np.array(['Time start', 'Time end']) != params['align_to'])]
+        self.instance = params['instance']
+        self.plot_range = params['plot_range']
+        self.no_repeats = params['no_repeats']
+        self.first_choice_correct = params['first_choice_correct']
         self.first_choice = first_choice
 
 
@@ -182,42 +181,42 @@ class SessionData(object):
     def get_choice_responses(self):
         self.choice_data = ChoiceAlignedData(self)
 
+
+class ZScoredTraces(object):
+    def __init__(self,  trial_data, dff, params, response, first_choice):
+        self.params = HeatMapParams(params, response, first_choice)
+        self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums = find_and_z_score_traces(
+            trial_data, dff, self.params, sort=False)
+
+
 class ChoiceAlignedData(object):
     def __init__(self, session_data):
-        fiber_options = np.array(['left', 'right'])
-        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
-        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
-
-        state_type_of_interest = 5
-        outcome = 1
-        last_outcome = 0  # NOT USED CURRENLY
-        no_repeats = 1
-        last_response = 0
-        align_to = 'Time start'
-        instance = -1
-        plot_range = [-2, 3]
-        first_choice_correct = 1
-
-        response = fiber_side_numeric
-        first_choice = fiber_side_numeric
-        self.ipsi_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
-                                         last_outcome, first_choice_correct, align_to, instance, no_repeats, plot_range)
-
-        response = contra_fiber_side_numeric
-        first_choice = contra_fiber_side_numeric
-        self.contra_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
-                                           last_outcome, first_choice_correct, align_to, instance, no_repeats,
-                                           plot_range)
-
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
         dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
         dff = np.load(saving_folder + dff_trace_filename)
-        self.ipsi_time_points, self.ipsi_mean_trace, self.ipsi_sorted_traces, self.ipsi_reaction_times, self.state_name, title, self.ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
-            trial_data, dff, self.ipsi_params, sort=False)
-        self.contra_time_points, self.contra_mean_trace, self.contra_sorted_traces, self.contra_reaction_times, self.state_name, title, self.contra_sorted_next_poke, self.contra_trial_nums = find_and_z_score_traces(
-            trial_data, dff, self.contra_params, sort=False)
+
+        fiber_options = np.array(['left', 'right'])
+        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
+        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
+
+        params = {'state_type_of_interest': 5,
+            'outcome': 1,
+            'last_outcome': 0,  # NOT USED CURRENTLY
+            'no_repeats' : 1,
+            'last_response': 0,
+            'align_to' : 'Time start',
+            'instance': -1,
+            'plot_range': [-2, 3],
+            'first_choice_correct': 1}
+
+        self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+
+        self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
+
+
 
 
 
