@@ -42,7 +42,7 @@ for mouse_dates in mice_dates:
 average_ipsi = np.mean(np.array(ipsi_mean_traces), axis=0)
 average_contra = np.mean(np.array(contra_mean_traces), axis=0)
 
-figure = heat_map_and_mean(example_choice_data, average_ipsi, average_contra, sort=True, error_bar_method='sem', mean_across_mice=True)
+figure = heat_map_and_mean(example_choice_data, average_ipsi, average_contra, sort=True, error_bar_method='ci', mean_across_mice=True)
 plt.savefig('W:\\upgrade\\figure2_plots.pdf', transparent=True, optimize=True)
 plt.show()
 

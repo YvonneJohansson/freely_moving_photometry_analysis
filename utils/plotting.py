@@ -142,16 +142,16 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
     max_dff_contra = np.max(aligned_session_data.contra_data.sorted_traces)
     heatmap_min, heatmap_max = make_y_lims_same((min_dff_ipsi, max_dff_ipsi), (min_dff_contra, max_dff_contra))
     dff_range = (heatmap_min, heatmap_max)
-    ipsi_heatmap = plot_one_side(aligned_session_data.ipsi_data, fig, axs[0, 0], axs[0, 1], dff_range, error_bar_method=error_bar_method, sort=sort)
-    contra_heatmap = plot_one_side(aligned_session_data.contra_data, fig, axs[1, 0], axs[1, 1], dff_range, error_bar_method=error_bar_method, sort=sort)
-    ylim_ipsi = axs[0, 0].get_ylim()
-    ylim_contra = axs[1, 0].get_ylim()
+    ipsi_heatmap = plot_one_side(aligned_session_data.ipsi_data, fig, axs[1, 0], axs[1, 1], dff_range, error_bar_method=error_bar_method, sort=sort)
+    contra_heatmap = plot_one_side(aligned_session_data.contra_data, fig, axs[0, 0], axs[0, 1], dff_range, error_bar_method=error_bar_method, sort=sort)
+    ylim_ipsi = axs[1, 0].get_ylim()
+    ylim_contra = axs[0, 0].get_ylim()
     ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
     axs[0, 0].set_ylim([ylim_min, ylim_max])
     axs[1, 0].set_ylim([ylim_min, ylim_max])
 
-    cb_ipsi = fig.colorbar(ipsi_heatmap, ax=axs[0, 1], orientation='vertical', fraction=.1)
-    cb_contra = fig.colorbar(contra_heatmap, ax=axs[1, 1], orientation='vertical', fraction=.1)
+    cb_ipsi = fig.colorbar(ipsi_heatmap, ax=axs[1, 1], orientation='vertical', fraction=.1)
+    cb_contra = fig.colorbar(contra_heatmap, ax=axs[0, 1], orientation='vertical', fraction=.1)
     cb_ipsi.ax.set_title('z-score', fontsize=9, pad=2)
     cb_contra.ax.set_title('z-score', fontsize=9, pad=2)
 
@@ -159,18 +159,18 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
         x_range = axs[0, 0].get_xlim()
         ipsi_data = mean_data[0]
         contra_data = mean_data[1]
-        line_plot_dff(aligned_session_data.ipsi_data.time_points, ipsi_data, axs[0, 2], x_range)
-        line_plot_dff(aligned_session_data.ipsi_data.time_points, contra_data, axs[1, 2], x_range)
-        ylim_ipsi = axs[0, 2].get_ylim()
-        ylim_contra = axs[1, 2].get_ylim()
+        line_plot_dff(aligned_session_data.ipsi_data.time_points, ipsi_data, axs[1, 2], x_range)
+        line_plot_dff(aligned_session_data.ipsi_data.time_points, contra_data, axs[0, 2], x_range)
+        ylim_ipsi = axs[1, 2].get_ylim()
+        ylim_contra = axs[0, 2].get_ylim()
         ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
         axs[0, 2].set_ylim([ylim_min, ylim_max])
         axs[1, 2].set_ylim([ylim_min, ylim_max])
 
-        for ax in [axs[0, 0], axs[0, 2], axs[1, 0], axs[1, 2]]:
-            adjust_label_distances(ax, x_space=0.18, y_space=0.18)
-        for ax in [axs[0, 1], axs[1, 1]]:
-            adjust_label_distances(ax, x_space=0.2, y_space=0.32)
+    for ax in [axs[0, 0], axs[1, 0]]:
+        adjust_label_distances(ax, x_space=0.2, y_space=0.12)
+    for ax in [axs[0, 1], axs[1, 1],  axs[0, 2],  axs[1, 2]]:
+        adjust_label_distances(ax, x_space=0.2, y_space=0.2)
 
     return fig
 
@@ -186,8 +186,8 @@ def make_y_lims_same(ylim_ipsi, ylim_contra):
 
 
 def line_plot_dff(x_vals, y_vals, ax, x_range):
-    ax.plot(x_vals, y_vals, color='#3F888F', lw=3)
-    ax.axvline(0, color='k', linewidth=2)
+    ax.plot(x_vals, y_vals, color='#3F888F', lw=2)
+    ax.axvline(0, color='k', linewidth=1)
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('z-score')
     ax.set_xlim(x_range)
@@ -204,10 +204,10 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='se
                                                                 traces,
                                                                 error_bar_method=error_bar_method)
         ax1.fill_between(time_points, error_bar_lower, error_bar_upper, alpha=0.5,
-                            facecolor='#7FB5B5', linewidth=1)
+                            facecolor='#7FB5B5', linewidth=0)
 
 
-    ax1.axvline(0, color='k', linewidth=2)
+    ax1.axvline(0, color='k', linewidth=1)
     ax1.set_xlim(one_side_data.params.plot_range)
     ax1.set_xlabel('Time (s)')
     ax1.set_ylabel('z-score')
@@ -221,7 +221,7 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='se
     heat_im = ax2.imshow(one_side_data.sorted_traces, aspect='auto',
                             extent=[-10, 10, one_side_data.sorted_traces.shape[0], 0], cmap='jet')
 
-    ax2.axvline(0, color='w', linewidth=2)
+    ax2.axvline(0, color='w', linewidth=1)
     ax2.scatter(one_side_data.reaction_times,
                    np.arange(one_side_data.reaction_times.shape[0]) + 0.5, color='w', s=1)
     ax2.scatter(one_side_data.sorted_next_poke,
