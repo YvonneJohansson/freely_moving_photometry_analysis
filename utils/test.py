@@ -10,7 +10,7 @@ import pandas as pd
 
 experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
 experiment_record['date'] = experiment_record['date'].astype(str)
-
+experiment_record = experiment_record[experiment_record['mouse_id']=='SNL_photo18']
 for index, experiment in experiment_record.iterrows():
     saving_folder = 'W:\\photometry_2AC\\processed_data\\' + experiment['mouse_id'] + '\\'
     restructured_data_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'restructured_data.pkl'
@@ -21,7 +21,6 @@ for index, experiment in experiment_record.iterrows():
     session_traces = SessionData(experiment['fiber_side'], experiment['recording_site'], experiment['mouse_id'], experiment['date'])
     session_traces.get_choice_responses()
     session_traces.get_cue_responses()
-    session_traces.get_reward_responses()
     aligned_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'aligned_traces.p'
     save_filename = saving_folder + aligned_filename
     pickle.dump(session_traces, open(save_filename, "wb"))

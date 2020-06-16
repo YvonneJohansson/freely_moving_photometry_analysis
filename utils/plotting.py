@@ -339,45 +339,6 @@ class correctData(object):
         self.contra_CI = dff_events_contra[3]
 
 
-class cueData(object):
-    def __init__(self, fiber_side, mouse_id, date, trial_data, dff):
-        self.mouse = mouse_id
-        self.fiber_side = fiber_side
-        self.date = date
-
-        fiber_options = np.array(['left', 'right'])
-        fiber_side_numeric = (np.where(fiber_options == fiber_side)[0] + 1)[0]
-
-        state_type_of_interest = 3
-        outcome = 1
-        last_outcome = 0  # NOT USED CURRENLY
-        no_repeats = 1
-        last_response = 0
-        align_to = 'Time start'
-        instance = 1
-        plot_range = [-2, 3]
-        first_choice_correct = 1
-
-        response = fiber_side_numeric
-        first_choice = fiber_side_numeric
-        plotting_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
-                                        last_outcome, first_choice_correct, align_to, instance, no_repeats, plot_range)
-        dff_events_ipsi = heat_map_and_mean(trial_data, dff, plotting_params, mouse_id, date)
-
-        self.ipsi_mean_x_vals = dff_events_ipsi[1]
-        self.ipsi_mean_y_vals = dff_events_ipsi[2]
-        self.ipsi_CI = dff_events_ipsi[3]
-
-        contra_fiber_side_numeric = (np.where(fiber_options != fiber_side)[0] + 1)[0]
-        response = contra_fiber_side_numeric
-        first_choice = contra_fiber_side_numeric
-        plotting_params = HeatMapParams(state_type_of_interest, response, first_choice, last_response, outcome,
-                                        last_outcome, first_choice_correct, align_to, instance, no_repeats, plot_range)
-        dff_events_contra = heat_map_and_mean(trial_data, dff, plotting_params, mouse_id, date)
-
-        self.contra_mean_x_vals = dff_events_contra[1]
-        self.contra_mean_y_vals = dff_events_contra[2]
-        self.contra_CI = dff_events_contra[3]
 
 class rewardData(object):
     def __init__(self, fiber_side, mouse_id, date, trial_data, dff):

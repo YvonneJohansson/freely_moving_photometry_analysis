@@ -25,7 +25,7 @@ saving_folder = 'W:\\photometry_2AC\\processed_data\\' + example_mouse + '\\'
 choice_aligned_filename = example_mouse + '_' + example_date + '_' + 'aligned_traces.p'
 save_filename = saving_folder + choice_aligned_filename
 example_session_data = pickle.load(open(save_filename, "rb"))
-example_choice_data = example_session_data.choice_data
+example_cue_data = example_session_data.cue_data
 
 contra_mean_traces = []
 ipsi_mean_traces = []
@@ -34,15 +34,15 @@ for mouse_dates in mice_dates:
     mouse = mouse_dates.mouse
     date = mouse_dates.dates
     saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
-    aligned_filename = saving_folder + mouse + '_' + date + '_' + 'choice_aligned_traces.p'
+    aligned_filename = saving_folder + mouse + '_' + date + '_' + 'aligned_traces.p'
     session_data = pickle.load(open(aligned_filename, "rb"))
-    choice_data = session_data.choice_data
-    contra_mean_traces.append(choice_data.contra_data.mean_trace)
-    ipsi_mean_traces.append(choice_data.ipsi_data.mean_trace)
+    cue_data = session_data.cue_data
+    contra_mean_traces.append(cue_data.contra_data.mean_trace)
+    ipsi_mean_traces.append(cue_data.ipsi_data.mean_trace)
 average_ipsi = np.mean(np.array(ipsi_mean_traces), axis=0)
 average_contra = np.mean(np.array(contra_mean_traces), axis=0)
 
-figure = heat_map_and_mean(example_choice_data, average_ipsi, average_contra, sort=True, error_bar_method='ci', mean_across_mice=True)
-plt.savefig('W:\\upgrade\\figure2_plots.pdf', transparent=True, optimize=True)
+figure = heat_map_and_mean(example_cue_data, average_ipsi, average_contra, sort=True, error_bar_method='sem', mean_across_mice=True)
+plt.savefig('W:\\upgrade\\figure3_plots.pdf', transparent=True, optimize=True)
 plt.show()
 
