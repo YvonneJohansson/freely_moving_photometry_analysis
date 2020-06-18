@@ -121,7 +121,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
                              axis=0)
         mean_trace = np.mean(sorted_traces, axis=0)
 
-        return time_points, mean_trace, sorted_traces, sorted_other_event, state_name, title, sorted_next_poke, trial_nums
+        return time_points, mean_trace, sorted_traces, sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times
     else:
         if sort:
             arr1inds = other_event.argsort()
@@ -130,7 +130,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         else:
             sorted_other_event = other_event
             sorted_next_poke = next_centre_poke_norm
-        return sorted_other_event, state_name, title, sorted_next_poke, trial_nums
+        return sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times
 
 
 def get_peak_each_trial(sorted_traces, time_points, sorted_other_events, ipsi_or_contra):
@@ -191,7 +191,7 @@ class SessionData(object):
 class ZScoredTraces(object):
     def __init__(self,  trial_data, dff, params, response, first_choice):
         self.params = HeatMapParams(params, response, first_choice)
-        self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums = find_and_z_score_traces(
+        self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times = find_and_z_score_traces(
             trial_data, dff, self.params, sort=False)
 
 
