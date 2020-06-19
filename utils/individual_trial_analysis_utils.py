@@ -39,14 +39,16 @@ def get_photometry_around_event(all_trial_event_times, demodulated_trace, pre_wi
 
 
 def get_next_centre_poke(trial_data, events_of_int):
-    trial_numbers = events_of_int['Trial num'].values
-    next_centre_poke_times = []
-    for event_trial_num in range(len(trial_numbers) - 1):
-        trial_num = trial_numbers[event_trial_num]
+    trial_numbers = events_of_int['Trial num'].unique()[:-1]
+    next_centre_poke_times = np.zeros(events_of_int.shape[0])
+    events_of_int = events_of_int.reset_index(drop=True)
+    for event_trial_num in trial_numbers:
+        trial_num = event_trial_num
+        event_indx_for_that_trial = events_of_int.loc[(events_of_int['Trial num'] == trial_num)].index
         next_trial_events = trial_data.loc[(trial_data['Trial num'] == trial_num + 1)]
         wait_for_pokes = next_trial_events.loc[(next_trial_events['State type'] == 2)]
         next_wait_for_poke = wait_for_pokes.loc[(wait_for_pokes['Instance in state'] == 1)]
-        next_centre_poke_times.append(next_wait_for_poke['Time end'].values[0])
+        next_centre_poke_times[event_indx_for_that_trial] = next_wait_for_poke['Time end'].values[0]
     return next_centre_poke_times
 
 
@@ -86,6 +88,9 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         events_of_int = events_of_int.loc[(events_of_int['Instance in state'] == 1)]
         if params.no_repeats == 1:
             events_of_int = events_of_int.loc[events_of_int['Max times in state'] == 1]
+    elif params.instance == 0:
+        events_of_int = events_of_int
+
     if params.first_choice_correct:
         events_of_int = events_of_int.loc[
             (events_of_int['First choice correct'] == 1)]
@@ -96,7 +101,11 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     other_event = np.asarray(
         np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
     next_centre_poke = get_next_centre_poke(trial_data, events_of_int)
-    next_centre_poke.append(event_times[-1])
+
+    last_trial_num = events_of_int['Trial num'].unique()[-1]
+    events_reset_indx = events_of_int.reset_index(drop=True)
+    last_trial_event_indx = events_reset_indx.loc[(events_reset_indx['Trial num'] == last_trial_num)].index
+    next_centre_poke[last_trial_event_indx] = events_reset_indx[params.align_to].values[last_trial_event_indx]
     next_centre_poke_norm = next_centre_poke - event_times
 
     # this all deals with getting photometry data
@@ -188,11 +197,44 @@ class SessionData(object):
         self.reward_data = RewardAlignedData(self)
 
 
+class SessionEvents(object):
+    def __init__(self, fiber_side, recording_site, mouse_id, date):
+        self.mouse = mouse_id
+        self.fiber_side = fiber_side
+        self.recording_site = recording_site
+        self.date = date
+        self.choice_data = None
+        self.cue_data = None
+        self.reward_data = None
+
+    def get_reaction_times(self, dff, trial_data):
+        self.ipsi_reaction_times, state_name, title, ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
+        trial_data, dff, self.ipsi_params, sort=True, get_photometry_data=False)
+        self.contra_reaction_times, state_name, title, contra_sorted_next_poke, self.contra_trial_nums = find_and_z_score_traces(
+        trial_data, dff, self.ipsi_params, sort=True, get_photometry_data=False)
+
+    def get_choice_events(self):
+        self.choice_data = ChoiceAlignedEvents(self)
+
+    def get_cue_events(self):
+        self.cue_data = CueAlignedEvents(self)
+
+    def get_reward_events(self):
+        self.reward_data = RewardAlignedEvents(self)
+
+
 class ZScoredTraces(object):
     def __init__(self,  trial_data, dff, params, response, first_choice):
         self.params = HeatMapParams(params, response, first_choice)
         self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times = find_and_z_score_traces(
             trial_data, dff, self.params, sort=False)
+
+
+class BehaviouralEvents(object):
+    def __init__(self,  trial_data, dff, params, response, first_choice):
+        self.params = HeatMapParams(params, response, first_choice)
+        self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times = find_and_z_score_traces(
+            trial_data, dff, self.params, sort=False,  get_photometry_data=False)
 
 
 class ChoiceAlignedData(object):
@@ -222,6 +264,31 @@ class ChoiceAlignedData(object):
         self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
 
 
+class ChoiceAlignedEvents(object):
+    def __init__(self, session_data):
+        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
+        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+        dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
+        dff = np.load(saving_folder + dff_trace_filename)
+
+        fiber_options = np.array(['left', 'right'])
+        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
+        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
+
+        params = {'state_type_of_interest': 5,
+            'outcome': 2,
+            'last_outcome': 0,  # NOT USED CURRENTLY
+            'no_repeats' : 1,
+            'last_response': 0,
+            'align_to' : 'Time start',
+            'instance': -1,
+            'plot_range': [-6, 6],
+            'first_choice_correct': 0}
+
+        self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
 class CueAlignedData(object):
     def __init__(self, session_data):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
@@ -248,8 +315,60 @@ class CueAlignedData(object):
 
         self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
 
+class CueAlignedEvents(object):
+    def __init__(self, session_data):
+        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
+        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+        dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
+        dff = np.load(saving_folder + dff_trace_filename)
+
+        fiber_options = np.array(['left', 'right'])
+        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
+        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
+
+        params = {'state_type_of_interest': 3,
+            'outcome': 2,
+            'last_outcome': 0,  # NOT USED CURRENTLY
+            'no_repeats' : 0,
+            'last_response': 0,
+            'align_to' : 'Time start',
+            'instance': 0,
+            'plot_range': [-6, 6],
+            'first_choice_correct': 0}
+
+        self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.contra_data = BehaviouralEvents(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
 
 class RewardAlignedData(object):
+    def __init__(self, session_data):
+        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
+        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+        dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
+        dff = np.load(saving_folder + dff_trace_filename)
+
+        fiber_options = np.array(['left', 'right'])
+        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
+        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
+
+        params = {'state_type_of_interest': 5,
+            'outcome': 2,
+            'last_outcome': 0,  # NOT USED CURRENTLY
+            'no_repeats' : 0,
+            'last_response': 0,
+            'align_to' : 'Time end',
+            'instance': -1,
+            'plot_range': [-6, 6],
+            'first_choice_correct': 1}
+
+        self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+
+        self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
+
+class RewardAlignedEvents(object):
     def __init__(self, session_data):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
@@ -271,10 +390,8 @@ class RewardAlignedData(object):
             'plot_range': [-6, 6],
             'first_choice_correct': 1}
 
-        self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
-
-        self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
-
+        self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.contra_data = BehaviouralEvents(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
 
 
 
