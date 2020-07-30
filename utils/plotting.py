@@ -149,6 +149,8 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
     ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
     axs[0, 0].set_ylim([ylim_min, ylim_max])
     axs[1, 0].set_ylim([ylim_min, ylim_max])
+    axs[0, 0].set_xlim([-2, 2])
+    axs[1, 0].set_xlim([-2, 2])
 
     cb_ipsi = fig.colorbar(ipsi_heatmap, ax=axs[1, 1], orientation='vertical', fraction=.1)
     cb_contra = fig.colorbar(contra_heatmap, ax=axs[0, 1], orientation='vertical', fraction=.1)
@@ -167,10 +169,10 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
         axs[0, 2].set_ylim([ylim_min, ylim_max])
         axs[1, 2].set_ylim([ylim_min, ylim_max])
 
-    for ax in [axs[0, 0], axs[1, 0]]:
-        adjust_label_distances(ax, x_space=0.2, y_space=0.12)
-    for ax in [axs[0, 1], axs[1, 1],  axs[0, 2],  axs[1, 2]]:
-        adjust_label_distances(ax, x_space=0.2, y_space=0.2)
+        for ax in [axs[0, 0], axs[1, 0]]:
+            adjust_label_distances(ax, x_space=0.2, y_space=0.12)
+        for ax in [axs[0, 1], axs[1, 1],  axs[0, 2],  axs[1, 2]]:
+            adjust_label_distances(ax, x_space=0.2, y_space=0.2)
 
     return fig
 
