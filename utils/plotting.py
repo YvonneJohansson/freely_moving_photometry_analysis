@@ -126,7 +126,7 @@ def get_mean_and_sem(trial_data, demod_signal, params, norm_window=8, sort=False
     return x_vals, y_vals, sem, sorted_traces, sorted_last_event, state_name, title, sorted_next_poke
 
 
-def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', sort=False, mean_across_mice=False):
+def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', sort=False, mean_across_mice=False, xlims=[-2, 2]):
     if mean_across_mice:
         fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(7.5, 4))
     else:
@@ -149,8 +149,10 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
     ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
     axs[0, 0].set_ylim([ylim_min, ylim_max])
     axs[1, 0].set_ylim([ylim_min, ylim_max])
-    axs[0, 0].set_xlim([-2, 2])
-    axs[1, 0].set_xlim([-2, 2])
+    axs[0, 0].set_xlim(xlims)
+    axs[1, 0].set_xlim(xlims)
+    axs[1, 1].set_xlim(xlims)
+    axs[0, 1].set_xlim(xlims)
 
     cb_ipsi = fig.colorbar(ipsi_heatmap, ax=axs[1, 1], orientation='vertical', fraction=.1)
     cb_contra = fig.colorbar(contra_heatmap, ax=axs[0, 1], orientation='vertical', fraction=.1)
