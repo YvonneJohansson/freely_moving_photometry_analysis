@@ -284,7 +284,7 @@ class ChoiceAlignedEvents(object):
             'align_to' : 'Time start',
             'instance': -1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 0}
+            'first_choice_correct': 1}
 
         self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
@@ -304,7 +304,7 @@ class CueAlignedData(object):
         params = {'state_type_of_interest': 3,
             'outcome': 2,
             'last_outcome': 0,  # NOT USED CURRENTLY
-            'no_repeats' : 0,
+            'no_repeats' : 1,
             'last_response': 0,
             'align_to' : 'Time start',
             'instance': 1,
@@ -366,6 +366,8 @@ class RewardAlignedData(object):
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
 
         self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
+
 
 
 class RewardAlignedEvents(object):

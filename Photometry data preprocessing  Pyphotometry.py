@@ -13,8 +13,8 @@ from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
 
 
-mouse = 'SNL_photo19'
-date = '20200320'
+mouse = 'SNL_photo26'
+date = '20200812'
 daq_file = bpod.find_daq_file(mouse, date)
 data = nptdms.TdmsFile(daq_file)
 
@@ -37,12 +37,12 @@ if daq_num_trials != bpod_num_trials:
     print('bpod: ', bpod_num_trials)
 else: print(daq_num_trials, 'trials in session')
 
-
-signal, back = demodulate(chan_0, led465, led405)
-
 sampling_rate = 10000
-GCaMP_raw = signal[sampling_rate:]
-back_raw = back[sampling_rate:]
+signal, back = demodulate(chan_0[sampling_rate * 6:], led465[sampling_rate * 6:], led405[sampling_rate * 6:], 10000)
+
+
+GCaMP_raw = np.pad(signal, (6 * sampling_rate, 0), mode='median')
+back_raw = np.pad(back, (6 * sampling_rate, 0), mode='median')
 
 
 time_seconds = np.arange(GCaMP_raw.shape[0])/sampling_rate
@@ -93,9 +93,9 @@ smoothed_trace_filename = mouse + '_' + date + '_' + 'smoothed_signal.npy'
 background_filename = mouse + '_' + date + '_' + 'background.npy'
 notdF_filename = mouse + '_' + date + '_' + 'not_regress.npy'
 restructured_data_filename = mouse + '_' + date + '_' + 'restructured_data.pkl'
-np.save(saving_folder + demod_trace_filename, GCaMP_dF_F)
+#np.save(saving_folder + demod_trace_filename, GCaMP_dF_F)
 np.save(saving_folder + smoothed_trace_filename, smoothed_GCaMP)
-np.save(saving_folder + background_filename, back_highpass)
-np.save(saving_folder + notdF_filename, GCaMP_highpass)
+#np.save(saving_folder + background_filename, back_highpass)
+#np.save(saving_folder + notdF_filename, GCaMP_highpass)
 restructured_data.to_pickle(saving_folder + restructured_data_filename) 
 
