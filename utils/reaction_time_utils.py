@@ -37,16 +37,16 @@ def plot_reaction_times_overlayed(mouse, dates):
     colours = cm.viridis(np.linspace(0, 0.8, num_types))
     fig.suptitle(mouse + ' reaction')
     for date_num, date in enumerate(dates):
-        mean_and_sem_filename = saving_folder + mouse + '_' + date + '_' + 'peaks_correct_data.p'
+        mean_and_sem_filename = saving_folder +  mouse + '_' + date + '_' + 'aligned_traces.p'
         data = pickle.load( open(mean_and_sem_filename, "rb" ))
-        reaction_times = data.contra_reaction_times
+        reaction_times = data.choice_data.contra_data.reaction_times
         bins = np.arange(start=min(reaction_times), stop=max(reaction_times)+0.1, step=0.1)
         ax.hist(np.reshape(reaction_times, [len(reaction_times), 1]),bins=bins, density=True, color=colours[date_num], alpha=0.2)
 
     plt.show()
 
 
-def get_valid_trials(mouse, dates, window_around_mean=0.2, type_of_session='correct'):
+def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'):
     session_starts = get_bpod_trial_nums_per_session(mouse, dates)
     saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
     all_peaks = []
@@ -56,14 +56,19 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, type_of_session='corr
     all_actual_trial_numbers = []
     # if I can get the trial numbers ever that things belong to, then we are in business
     for date_num, date in enumerate(dates):
-        mean_and_sem_filename = saving_folder + mouse + '_' + date + '_' + 'peaks_' + type_of_session + '_data.p'
-        data = pickle.load( open(mean_and_sem_filename, "rb" ))
-        actual_trial_numbers = data.contra_trial_nums + session_starts[date_num]
+        aligned_filename = saving_folder +  mouse + '_' + date + '_' + 'aligned_traces.p'
+        #mean_and_sem_filename = saving_folder + mouse + '_' + date + '_' + 'peaks_' + type_of_session + '_data.p'
+        data = pickle.load( open(aligned_filename, "rb" ))
+        if recording_site == 'tail':
+            recording_site_data = data.choice_data.contra_data
+        elif recording_site == 'Nacc':
+            recording_site_data = data.cue_data.contra_data
+        actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
         all_actual_trial_numbers.append(actual_trial_numbers)
-        all_trial_numbers.append(len(data.contra_reaction_times))
-        all_reaction_times.append(data.contra_reaction_times)
-        all_peaks.append(data.contra_trials_peaks )
-        all_bins.append(np.arange(start=min(data.contra_reaction_times), stop=max(data.contra_reaction_times)+0.1, step=0.1))
+        all_trial_numbers.append(len(recording_site_data.reaction_times))
+        all_reaction_times.append(recording_site_data.reaction_times)
+        all_peaks.append(data.choice_data.contra_data.trial_peaks )
+        all_bins.append(np.arange(start=min(recording_site_data.reaction_times), stop=max(recording_site_data.reaction_times)+0.1, step=0.1))
     flattened_actual_trial_nums = [item for sublist in all_actual_trial_numbers for item in sublist]
     flattened_reaction_times = [item for sublist in all_reaction_times for item in sublist]
     all_trial_nums = np.arange(1, np.sum(all_trial_numbers) + 1, step=1)

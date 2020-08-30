@@ -19,6 +19,7 @@ class HeatMapParams(object):
         self.no_repeats = params['no_repeats']
         self.first_choice_correct = params['first_choice_correct']
         self.first_choice = first_choice
+        self.cue = params['cue']
 
 
 def get_photometry_around_event(all_trial_event_times, demodulated_trace, pre_window=5, post_window=5, sample_rate=10000):
@@ -51,6 +52,17 @@ def get_next_centre_poke(trial_data, events_of_int):
         next_centre_poke_times[event_indx_for_that_trial] = next_wait_for_poke['Time end'].values[0]
     return next_centre_poke_times
 
+def get_next_reward_time(trial_data, events_of_int):
+    trial_numbers = events_of_int['Trial num'].values
+    next_reward_times = []
+    for event_trial_num in range(len(trial_numbers)):
+        trial_num = trial_numbers[event_trial_num]
+        other_trial_events = trial_data.loc[(trial_data['Trial num'] == trial_num)]
+        choices = other_trial_events.loc[(other_trial_events['State type'] == 5)]
+        max_times_in_state_choices = choices['Max times in state'].unique()
+        choice = choices.loc[(choices['Instance in state'] == max_times_in_state_choices)]
+        next_reward_times.append(choice['Time end'].values[0])
+    return next_reward_times
 
 def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sort=False, get_photometry_data=True):
     response_names = ['both left and right', 'left', 'right']
@@ -74,7 +86,14 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         title = response_names[params.response]
     if not params.outcome == 2: # if you don't care about the reward or not
         events_of_int = events_of_int.loc[events_of_int['Trial outcome'] == params.outcome]
-    # events_of_int = events_of_int.loc[events_of_int['Last outcome'] == 0]
+    #events_of_int = events_of_int.loc[events_of_int['Last outcome'] == 0]
+
+    if params.cue == 'high':
+        events_of_int = events_of_int.loc[events_of_int['Trial type'] == 7]
+    elif params.cue == 'low':
+        events_of_int = events_of_int.loc[events_of_int['Trial type'] == 1]
+
+
 
     if params.state == 10:
         title = title + ' ' + 'omission'
@@ -91,7 +110,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     elif params.instance == 0:
         events_of_int = events_of_int
 
-    if params.first_choice_correct:
+    if params.first_choice_correct != 0:
         events_of_int = events_of_int.loc[
             (events_of_int['First choice correct'] == 1)]
 
@@ -101,6 +120,8 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     other_event = np.asarray(
         np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
     next_centre_poke = get_next_centre_poke(trial_data, events_of_int)
+    outcome_times = get_next_reward_time(trial_data, events_of_int)
+    outcome_times = outcome_times - event_times
 
     last_trial_num = events_of_int['Trial num'].unique()[-1]
     events_reset_indx = events_of_int.reset_index(drop=True)
@@ -130,7 +151,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
                              axis=0)
         mean_trace = np.mean(sorted_traces, axis=0)
 
-        return time_points, mean_trace, sorted_traces, sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times
+        return time_points, mean_trace, sorted_traces, sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times, outcome_times
     else:
         if sort:
             arr1inds = other_event.argsort()
@@ -142,22 +163,25 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         return sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times
 
 
-def get_peak_each_trial(sorted_traces, time_points, sorted_other_events, ipsi_or_contra):
+
+
+def get_peak_each_trial(sorted_traces, time_points, sorted_other_events):
     all_trials_peaks = []
     for trial_num in range(0, len(sorted_other_events)):
         indices_to_integrate = np.where(np.logical_and(np.greater_equal(time_points, 0), np.less_equal(time_points, sorted_other_events[trial_num])))
         trial_trace = (sorted_traces[trial_num, indices_to_integrate]).T
         trial_trace = trial_trace # - trial_trace[0]
         trial_peak_inds = peakutils.indexes(trial_trace.flatten('F'), thres=0.3)
-        if len(trial_peak_inds>1):
-            trial_peak_inds = trial_peak_inds[0]
-        trial_peaks = trial_trace.flatten('F')[trial_peak_inds]
-        all_trials_peaks.append(trial_peaks)
-        plt.plot(trial_trace)
-        plt.scatter(trial_peak_inds, trial_peaks)
-    #plt.title(ipsi_or_contra)
-    flat_peaks =  all_trials_peaks
-    plt.show()
+        if trial_peak_inds.shape[0] > 0:
+            if len(trial_peak_inds>1):
+                trial_peak_inds = trial_peak_inds[0]
+
+            trial_peaks = trial_trace.flatten('F')[trial_peak_inds]
+            all_trials_peaks.append(trial_peaks)
+        #plt.plot(trial_trace)
+        #plt.scatter(trial_peak_inds, trial_peaks)
+    flat_peaks = all_trials_peaks
+    #plt.show()
     return flat_peaks
 
 
@@ -170,22 +194,6 @@ class SessionData(object):
         self.choice_data = None
         self.cue_data = None
         self.reward_data = None
-
-    def get_reaction_times(self, dff, trial_data):
-        self.ipsi_reaction_times, state_name, title, ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
-        trial_data, dff, self.ipsi_params, sort=True, get_photometry_data=False)
-        self.contra_reaction_times, state_name, title, contra_sorted_next_poke, self.contra_trial_nums = find_and_z_score_traces(
-        trial_data, dff, self.ipsi_params, sort=True, get_photometry_data=False)
-
-    def get_peaks(self, dff, trial_data):
-        time_points, ipsi_mean_trace, ipsi_sorted_traces, self.ipsi_reaction_times, state_name, title, ipsi_sorted_next_poke, self.ipsi_trial_nums = find_and_z_score_traces(
-        trial_data, dff, self.ipsi_params, sort=False)
-        ipsi_trials_peaks = get_peak_each_trial(ipsi_sorted_traces, time_points,  self.ipsi_reaction_times, 'ipsi')
-        self.ipsi_trials_peaks = ipsi_trials_peaks
-        time_points, contra_mean_trace, contra_sorted_traces, self.contra_reaction_times, state_name, title, contra_sorted_next_poke, self.contra_trial_nums  = find_and_z_score_traces(
-        trial_data, dff, self.contra_params, sort=False)
-        contra_trials_peaks = get_peak_each_trial(contra_sorted_traces, time_points, self.contra_reaction_times, 'contra')
-        self.contra_trials_peaks = contra_trials_peaks
 
     def get_choice_responses(self):
         self.choice_data = ChoiceAlignedData(self)
@@ -225,9 +233,13 @@ class SessionEvents(object):
 
 class ZScoredTraces(object):
     def __init__(self,  trial_data, dff, params, response, first_choice):
+        self.trial_peaks = None
         self.params = HeatMapParams(params, response, first_choice)
-        self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times = find_and_z_score_traces(
+        self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times, self.outcome_times = find_and_z_score_traces(
             trial_data, dff, self.params, sort=False)
+
+    def get_peaks(self):
+        self.trial_peaks = get_peak_each_trial(self.sorted_traces, self.time_points, self.outcome_times)
 
 
 class BehaviouralEvents(object):
@@ -257,11 +269,14 @@ class ChoiceAlignedData(object):
             'align_to' : 'Time start',
             'instance': -1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 1}
+            'first_choice_correct': 0,
+            'cue': None}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.ipsi_data.get_peaks()
 
         self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+        self.contra_data.get_peaks()
 
 
 class ChoiceAlignedEvents(object):
@@ -284,7 +299,9 @@ class ChoiceAlignedEvents(object):
             'align_to' : 'Time start',
             'instance': -1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 1}
+            'first_choice_correct': 0,
+            'cue': None}
+
 
         self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
@@ -309,11 +326,18 @@ class CueAlignedData(object):
             'align_to' : 'Time start',
             'instance': 1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 0}
+            'first_choice_correct': 0,
+            'cue': None}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.ipsi_data.get_peaks()
+        self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+        self.contra_data.get_peaks()
 
-        self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+        params['cue'] = 'high'
+        self.high_cue_data =  ZScoredTraces(trial_data, dff, params, 0, 0)
+        params['cue'] = 'low'
+        self.low_cue_data = ZScoredTraces(trial_data, dff, params, 0, 0)
 
 class CueAlignedEvents(object):
     def __init__(self, session_data):
@@ -335,11 +359,15 @@ class CueAlignedEvents(object):
             'align_to' : 'Time start',
             'instance': 1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 0}
+            'first_choice_correct': 0,
+             'cue': None}
 
         self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.contra_data = BehaviouralEvents(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
-
+        params['cue'] = 'high'
+        self.high_cue_data = BehaviouralEvents(trial_data, dff, params, 0, 0)
+        params['cue'] = 'low'
+        self.low_cue_data = BehaviouralEvents(trial_data, dff, params, 0, 0)
 
 class RewardAlignedData(object):
     def __init__(self, session_data):
@@ -354,14 +382,15 @@ class RewardAlignedData(object):
         contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
 
         params = {'state_type_of_interest': 5,
-            'outcome': 2,
+            'outcome': 1,
             'last_outcome': 0,  # NOT USED CURRENTLY
             'no_repeats' : 0,
             'last_response': 0,
             'align_to' : 'Time end',
             'instance': -1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 1}
+            'first_choice_correct': 1,
+            'cue': None}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
 
@@ -390,7 +419,8 @@ class RewardAlignedEvents(object):
             'align_to' : 'Time end',
             'instance': -1,
             'plot_range': [-6, 6],
-            'first_choice_correct': 1}
+            'first_choice_correct': 1,
+            'cue': None}
 
         self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)

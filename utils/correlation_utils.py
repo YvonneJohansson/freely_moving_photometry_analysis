@@ -54,6 +54,8 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
         fit_equation = linear
         starting_params = [-0.0003, 0.5]
         legend = "y= %0.5f$x$ + %0.5f"
+    else:
+        fit_equation = None
 
     rolling_mean_peak = []
     x_vals = []
@@ -61,30 +63,37 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
         rolling_mean_peak.append(np.nanmean(valid_peaks[window_num * window_size: (window_num + 1) * window_size]))
         x_vals.append(np.mean(valid_trial_nums[window_num * window_size: (window_num + 1) * window_size]))
     norm_rolling_mean_peak = np.array(rolling_mean_peak)/ 1.0 # np.max(rolling_mean_peak)
-    popt_exponential, pcov_exponential = scipy.optimize.curve_fit(fit_equation, np.array(x_vals), np.array(norm_rolling_mean_peak), p0=starting_params)
-    perr_exponential = np.sqrt(np.diag(pcov_exponential))
 
-    print("pre-exponential factor = %0.2f (+/-) %0.2f" % (popt_exponential[0], perr_exponential[0]))
-    print("rate constant = %0.5f (+/-) %0.5f" % (popt_exponential[1], perr_exponential[1]))
+    if fit_line != 'None':
+        popt_exponential, pcov_exponential = scipy.optimize.curve_fit(fit_equation, np.array(x_vals), np.array(norm_rolling_mean_peak), p0=starting_params)
+        perr_exponential = np.sqrt(np.diag(pcov_exponential))
 
-    x_vals_fit = np.linspace(np.min(x_vals), np.max(x_vals), 1000)
-    if fit_line == 'linear decay':
-        y_vals_fit = fit_equation(x_vals_fit, popt_exponential[0], popt_exponential[1])
-        residuals = norm_rolling_mean_peak - fit_equation(np.array(x_vals), popt_exponential[0], popt_exponential[1])
+        print("pre-exponential factor = %0.2f (+/-) %0.2f" % (popt_exponential[0], perr_exponential[0]))
+        print("rate constant = %0.5f (+/-) %0.5f" % (popt_exponential[1], perr_exponential[1]))
+
+        x_vals_fit = np.linspace(np.min(x_vals), np.max(x_vals), 1000)
+        if fit_line == 'linear decay':
+            y_vals_fit = fit_equation(x_vals_fit, popt_exponential[0], popt_exponential[1])
+            residuals = norm_rolling_mean_peak - fit_equation(np.array(x_vals), popt_exponential[0], popt_exponential[1])
+        else:
+            residuals = norm_rolling_mean_peak - fit_equation(np.array(x_vals), popt_exponential[0], popt_exponential[1], popt_exponential[2])
+
+            y_vals_fit = fit_equation(x_vals_fit, popt_exponential[0], popt_exponential[1], popt_exponential[2])
+
+        ss_res = np.sum(residuals ** 2)
+        ss_tot = np.sum((norm_rolling_mean_peak - np.mean(norm_rolling_mean_peak)) ** 2)
+        r_squared = 1 - (ss_res / ss_tot)
+        print('r-squared value: ', r_squared)
     else:
-        residuals = norm_rolling_mean_peak - fit_equation(np.array(x_vals), popt_exponential[0], popt_exponential[1], popt_exponential[2])
+        x_vals_fit = None
+        y_vals_fit = None
 
-        y_vals_fit = fit_equation(x_vals_fit, popt_exponential[0], popt_exponential[1], popt_exponential[2])
-
-    ss_res = np.sum(residuals ** 2)
-    ss_tot = np.sum((norm_rolling_mean_peak - np.mean(norm_rolling_mean_peak)) ** 2)
-    r_squared = 1 - (ss_res / ss_tot)
-    print('r-squared value: ', r_squared)
     if plotting:
         fig, ax = plt.subplots(1, ncols=1, figsize=(10, 8))
         fig.subplots_adjust(hspace=0.5, wspace=0.2)
         ax.scatter(x_vals, norm_rolling_mean_peak)
-        ax.plot( x_vals_fit, y_vals_fit, color='grey')
+        if fit_line != 'None':
+            ax.plot( x_vals_fit, y_vals_fit, color='grey')
         ax.set_xlabel('bin (trials binned in groups of ' + str(window_size)+')')
         ax.set_xlim([0,13000])
         ax.set_ylabel('z-scored peak normalised to max size')
@@ -105,7 +114,8 @@ def multi_animal_scatter_and_fit(mice_dates, window_size=30, fit_type='exponenti
                                                                                                              window_around_mean=2)
         x_vals, norm_rolling_mean_peak, x_vals_fit, y_vals_fit = plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=window_size, fit_line=fit_type, plotting=False)
         ax.scatter(x_vals, norm_rolling_mean_peak, color=colours[mouse_num], label=mouse)
-        ax.plot(x_vals_fit, y_vals_fit, color=colours[mouse_num])
+        if fit_type != 'None':
+            ax.plot(x_vals_fit, y_vals_fit, color=colours[mouse_num])
     ax.set_xlabel('bin (trials binned in groups of ' + str(30)+')')
     ax.set_xlim([0,13000])
     ax.set_ylabel('z-scored peak')
