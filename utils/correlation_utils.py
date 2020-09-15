@@ -95,7 +95,7 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
         if fit_line != 'None':
             ax.plot( x_vals_fit, y_vals_fit, color='grey')
         ax.set_xlabel('bin (trials binned in groups of ' + str(window_size)+')')
-        ax.set_xlim([0,13000])
+        #ax.set_xlim([0,17000])
         ax.set_ylabel('z-scored peak normalised to max size')
 
     plt.show()
@@ -117,7 +117,7 @@ def multi_animal_scatter_and_fit(mice_dates, window_size=30, fit_type='exponenti
         if fit_type != 'None':
             ax.plot(x_vals_fit, y_vals_fit, color=colours[mouse_num])
     ax.set_xlabel('bin (trials binned in groups of ' + str(30)+')')
-    ax.set_xlim([0,13000])
+    #ax.set_xlim([0,15000])
     ax.set_ylabel('z-scored peak')
     ax.legend(loc='best')
     plt.show()
