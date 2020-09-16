@@ -8,9 +8,9 @@ import numpy as np
 import pandas as pd
 import math
 
-def find_bpod_file(mouse, date):
-    Bpod_data_path = 'W:\\photometry_2AC\\bpod_data\\' + mouse + '\\Two_Alternative_Choice\\Session Data\\'
-    Bpod_file_search_tool = mouse + '_Two_Alternative_Choice_' + date
+def find_bpod_file(mouse, date, protocol_type):
+    Bpod_data_path = 'W:\\photometry_2AC\\bpod_data\\' + mouse + '\\' + protocol_type + '\\Session Data\\'
+    Bpod_file_search_tool = mouse + '_' + protocol_type + '_' + date
     files_in_bpod_path = os.listdir(Bpod_data_path)
     files_on_that_day = [s for s in files_in_bpod_path if Bpod_file_search_tool in s]
     mat_files_on_that_day = [s for s in files_on_that_day if '.mat' in s]

@@ -16,12 +16,12 @@ from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
 
 
-def pre_process_experiment_lerner_deissroth(mouse, date):
+def pre_process_experiment_lerner_deissroth(mouse, date, protocol):
     daq_file = bpod.find_daq_file(mouse, date)
     data = nptdms.TdmsFile(daq_file)
     sampling_rate = 10000
 
-    main_session_file = bpod.find_bpod_file(mouse, date)
+    main_session_file = bpod.find_bpod_file(mouse, date, protocol)
     loaded_bpod_file, trial_raw_events = bpod.load_bpod_file(main_session_file)
 
     chan_0 = data.group_channels('acq_task')[0].data
@@ -62,11 +62,11 @@ def pre_process_experiment_lerner_deissroth(mouse, date):
     restructured_data.to_pickle(saving_folder + restructured_data_filename)
 
 
-def pre_process_experiment_pyphotometry(mouse, date):
+def pre_process_experiment_pyphotometry(mouse, date, protocol):
     daq_file = bpod.find_daq_file(mouse, date)
     data = nptdms.TdmsFile(daq_file)
 
-    main_session_file = bpod.find_bpod_file(mouse, date)
+    main_session_file = bpod.find_bpod_file(mouse, date, protocol)
     loaded_bpod_file, trial_raw_events = bpod.load_bpod_file(main_session_file)
 
     chan_0 = data.group_channels('acq_task')[0].data
@@ -144,19 +144,19 @@ def pre_process_experiment_pyphotometry(mouse, date):
     restructured_data.to_pickle(saving_folder + restructured_data_filename)
 
 
-def pre_process_experiments(experiments, method='pyphotometry'):
+def pre_process_experiments(experiments, method='pyphotometry', protocol='Two_Alternative_Choice'):
     for index, experiment in experiments.iterrows():
         mouse = experiment['mouse_id']
         date = experiment['date']
         if method == 'pyphotometry':
-            pre_process_experiment_pyphotometry(mouse, date)
+            pre_process_experiment_pyphotometry(mouse, date, protocol)
         elif method == 'lerner':
-            pre_process_experiment_lerner_deissroth(mouse, date)
+            pre_process_experiment_lerner_deissroth(mouse, date, protocol)
 
 
 if __name__ == "__main__":
-    mouse_ids = ['SNL_photo24', 'SNL_photo25', 'SNL_photo26']
-    date = 'all'
+    mouse_ids = ['SNL_photo26']
+    date = '20200915'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
         if (mouse_id =='all') & (date == 'all'):
