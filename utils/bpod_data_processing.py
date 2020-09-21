@@ -120,6 +120,7 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
         state_info['Trial end'] = np.ones((num_states)) * (state_timestamps[-1] + daq_trials_start_ttls[trial])
         state_info['Trial outcome'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['Outcomes'][trial]
         state_info['First response'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['FirstPoke'][trial]
+        state_info['Reward block'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['TrialSettings'][trial].RewardChangeBlock
 
         if loaded_bpod_file['SessionData']['FirstPoke'][trial] == loaded_bpod_file['SessionData']['TrialSide'][trial]:
             state_info['First choice correct'] = np.ones(num_states)
@@ -130,6 +131,7 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
             event_info['Instance in state'] = [1]
             event_info['Max times in state'] = [1]
             event_info['State name'] = ['Leaving reward port']
+            event_info['Reward block'] = loaded_bpod_file['SessionData']['TrialSettings'][trial].RewardChangeBlock
             event_info['Response'] = [loaded_bpod_file['SessionData']['ChosenSide'][trial]]
             if trial > 0:
                 event_info['Last response'] = [loaded_bpod_file['SessionData']['ChosenSide'][
@@ -163,11 +165,11 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
             else:
                 event_info['Time start'] = np.empty(0)
 
-            if trial < original_state_timestamps_all_trials.shape[0] -1:
+            if trial < original_state_timestamps_all_trials.shape[0] - 1:
                 if correct_port_out in original_raw_events[trial + 1]['Events']:
                     all_correct_pokes_out = np.squeeze(np.asarray([original_raw_events[trial + 1]['Events'][correct_port_out]]))
                     if event_info['Time start'].size != 0:
-                        if all_correct_pokes_out.size == 1 :
+                        if all_correct_pokes_out.size == 1:
                             event_info['Time end'] = all_correct_pokes_out
                         elif (all_correct_pokes_out).size > 1:
                             indices = np.where(all_correct_pokes_out > 0)
@@ -195,6 +197,7 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
             event_info['State type'] = [5.5]
             event_info['Instance in state'] = [1]
             event_info['Max times in state'] = [1]
+            event_info['Reward block'] = loaded_bpod_file['SessionData']['TrialSettings'][trial].RewardChangeBlock
             event_info['State name'] = ['First incorrect choice']
             out_of_centre_time = original_raw_events[trial]['States']['WaitForResponse'][0]
             correct_side = loaded_bpod_file['SessionData']['TrialSide'][trial]
