@@ -7,8 +7,8 @@ from utils.mean_trace_utils import mouseDates, plot_multiple_days, plot_average_
 import matplotlib.pyplot as plt
 
 experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
-example_mouse = 'SNL_photo18'
-example_date = '20200223'
+example_mouse = 'SNL_photo19'
+example_date = '20200225'
 
 mice_dates = []
 mouse1 = 'SNL_photo16'
@@ -30,19 +30,19 @@ example_cue_data = example_session_data.cue_data
 contra_mean_traces = []
 ipsi_mean_traces = []
 
-for mouse_dates in mice_dates:
-    mouse = mouse_dates.mouse
-    date = mouse_dates.dates
-    saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
-    aligned_filename = saving_folder + mouse + '_' + date + '_' + 'aligned_traces.p'
-    session_data = pickle.load(open(aligned_filename, "rb"))
-    cue_data = session_data.cue_data
-    contra_mean_traces.append(cue_data.contra_data.mean_trace)
-    ipsi_mean_traces.append(cue_data.ipsi_data.mean_trace)
-average_ipsi = np.mean(np.array(ipsi_mean_traces), axis=0)
-average_contra = np.mean(np.array(contra_mean_traces), axis=0)
+#for mouse_dates in mice_dates:
+#    mouse = mouse_dates.mouse
+#    date = mouse_dates.dates
+#    saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
+#    aligned_filename = saving_folder + mouse + '_' + date + '_' + 'aligned_traces.p'
+#    session_data = pickle.load(open(aligned_filename, "rb"))
+#    cue_data = session_data.cue_data
+#    contra_mean_traces.append(cue_data.contra_data.mean_trace)
+#    ipsi_mean_traces.append(cue_data.ipsi_data.mean_trace)
+#average_ipsi = np.mean(np.array(ipsi_mean_traces), axis=0)
+#average_contra = np.mean(np.array(contra_mean_traces), axis=0)
 
-figure = heat_map_and_mean(example_cue_data, average_ipsi, average_contra, sort=True, error_bar_method='sem', mean_across_mice=True)
-plt.savefig('W:\\upgrade\\figure3_plots.pdf', transparent=True, optimize=True)
+figure = heat_map_and_mean(example_cue_data, sort=True, error_bar_method=None, mean_across_mice=False, white_dot='default', xlims=[-1,3])
+#plt.savefig('W:\\upgrade\\figure3_plots.pdf', transparent=True, optimize=True)
 plt.show()
 

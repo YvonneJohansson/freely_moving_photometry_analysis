@@ -5,6 +5,7 @@ from matplotlib import colors, cm
 from tqdm import tqdm
 import matplotlib
 from scipy.signal import decimate
+
 import seaborn as sns
 from utils.individual_trial_analysis_utils import SessionData, ChoiceAlignedData, ZScoredTraces
 
@@ -118,7 +119,7 @@ def get_mean_and_sem(trial_data, demod_signal, params, norm_window=8, sort=False
     x_vals = np.linspace(-norm_window, norm_window, norm_traces.shape[0], endpoint=True, retstep=False, dtype=None, axis=0)
     y_vals = np.mean(sorted_traces, axis=0)
     if error_bar_method == 'ci':
-        sem = bootstrap(sorted_traces, n_boot=1000, ci=95) 
+        sem = bootstrap(sorted_traces, n_boot=1000, ci=95)
     elif error_bar_method == 'sem':
         sem = np.std(sorted_traces, axis=0)
     print(np.mean(next_centre_poke_norm), np.std(next_centre_poke_norm))
@@ -126,15 +127,16 @@ def get_mean_and_sem(trial_data, demod_signal, params, norm_window=8, sort=False
     return x_vals, y_vals, sem, sorted_traces, sorted_last_event, state_name, title, sorted_next_poke
 
 
-def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', sort=False, mean_across_mice=False, xlims=[-2, 2]):
+def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', sort=False, mean_across_mice=False, xlims=[-2, 2], white_dot='default'):
     if mean_across_mice:
         fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(7.5, 4))
+        fig.tight_layout(pad=1.3)
     else:
         fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(5.5, 5.5))
+        fig.tight_layout(pad=2.1)
 
     font = {'size': 10}
     matplotlib.rc('font', **font)
-    fig.tight_layout(pad=1.3)
 
     min_dff_ipsi = np.min(aligned_session_data.ipsi_data.sorted_traces)
     max_dff_ipsi = np.max(aligned_session_data.ipsi_data.sorted_traces)
@@ -142,8 +144,8 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
     max_dff_contra = np.max(aligned_session_data.contra_data.sorted_traces)
     heatmap_min, heatmap_max = make_y_lims_same((min_dff_ipsi, max_dff_ipsi), (min_dff_contra, max_dff_contra))
     dff_range = (heatmap_min, heatmap_max)
-    ipsi_heatmap = plot_one_side(aligned_session_data.ipsi_data, fig, axs[1, 0], axs[1, 1], dff_range, error_bar_method=error_bar_method, sort=sort)
-    contra_heatmap = plot_one_side(aligned_session_data.contra_data, fig, axs[0, 0], axs[0, 1], dff_range, error_bar_method=error_bar_method, sort=sort)
+    ipsi_heatmap = plot_one_side(aligned_session_data.ipsi_data, fig, axs[1, 0], axs[1, 1], dff_range, error_bar_method=error_bar_method, sort=sort, white_dot=white_dot)
+    contra_heatmap = plot_one_side(aligned_session_data.contra_data, fig, axs[0, 0], axs[0, 1], dff_range, error_bar_method=error_bar_method, sort=sort, white_dot=white_dot)
     ylim_ipsi = axs[1, 0].get_ylim()
     ylim_contra = axs[0, 0].get_ylim()
     ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
@@ -153,6 +155,9 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
     axs[1, 0].set_xlim(xlims)
     axs[1, 1].set_xlim(xlims)
     axs[0, 1].set_xlim(xlims)
+    axs[0,0].set_ylabel('z-score')
+    axs[1, 0].set_ylabel('z-score')
+
 
     cb_ipsi = fig.colorbar(ipsi_heatmap, ax=axs[1, 1], orientation='vertical', fraction=.1)
     cb_contra = fig.colorbar(contra_heatmap, ax=axs[0, 1], orientation='vertical', fraction=.1)
@@ -197,7 +202,7 @@ def line_plot_dff(x_vals, y_vals, ax, x_range):
     ax.set_xlim(x_range)
 
 
-def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='sem', sort=False):
+def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='sem', sort=False, white_dot='default'):
     mean_trace = decimate(one_side_data.mean_trace, 10)
     time_points = decimate(one_side_data.time_points, 10)
     traces = decimate(one_side_data.sorted_traces, 10)
@@ -216,9 +221,14 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='se
     ax1.set_xlabel('Time (s)')
     ax1.set_ylabel('z-score')
 
+    if white_dot == 'reward':
+        white_dot_point = one_side_data.outcome_times
+    else:
+        white_dot_point = one_side_data.reaction_times
     if sort:
-        arr1inds = one_side_data.reaction_times.argsort()
+        arr1inds = white_dot_point.argsort()
         one_side_data.reaction_times = one_side_data.reaction_times[arr1inds[::-1]]
+        one_side_data.outcome_times = one_side_data.outcome_times[arr1inds[::-1]]
         one_side_data.sorted_traces = one_side_data.sorted_traces[arr1inds[::-1]]
         one_side_data.sorted_next_poke = one_side_data.sorted_next_poke[arr1inds[::-1]]
 
@@ -226,8 +236,12 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='se
                             extent=[-10, 10, one_side_data.sorted_traces.shape[0], 0], cmap='jet')
 
     ax2.axvline(0, color='w', linewidth=1)
-    ax2.scatter(one_side_data.reaction_times,
-                   np.arange(one_side_data.reaction_times.shape[0]) + 0.5, color='w', s=1)
+    if white_dot == 'reward':
+        ax2.scatter(one_side_data.outcome_times,
+                       np.arange(one_side_data.reaction_times.shape[0]) + 0.5, color='w', s=1)
+    else:
+        ax2.scatter(one_side_data.reaction_times,
+                    np.arange(one_side_data.reaction_times.shape[0]) + 0.5, color='w', s=1)
     ax2.scatter(one_side_data.sorted_next_poke,
                    np.arange(one_side_data.sorted_next_poke.shape[0]) + 0.5, color='k', s=1)
     ax2.tick_params(labelsize=10)
@@ -276,11 +290,11 @@ def multiple_conditions_plot(trial_data, demod_signal, mouse, date, *param_set):
 
 def calculate_error_bars(mean_trace, data, error_bar_method='sem'):
     if error_bar_method == 'sem':
-        std = np.std(data, axis=0)
-        lower_bound = mean_trace - std
-        upper_bound = mean_trace + std
+        sem = stats.sem(data, axis=0)
+        lower_bound = mean_trace - sem
+        upper_bound = mean_trace + sem
     elif error_bar_method == 'ci':
-        lower_bound, upper_bound = bootstrap(data, n_boot=1000)
+        lower_bound, upper_bound = bootstrap(data, n_boot=1000, ci=68)
     return lower_bound, upper_bound
 
 

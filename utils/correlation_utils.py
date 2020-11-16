@@ -91,12 +91,12 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
     if plotting:
         fig, ax = plt.subplots(1, ncols=1, figsize=(10, 8))
         fig.subplots_adjust(hspace=0.5, wspace=0.2)
-        ax.scatter(x_vals, norm_rolling_mean_peak)
+        ax.scatter(x_vals, norm_rolling_mean_peak, color='#3F888F')
         if fit_line != 'None':
-            ax.plot( x_vals_fit, y_vals_fit, color='grey')
+            ax.plot(x_vals_fit, y_vals_fit, color='grey')
         ax.set_xlabel('bin (trials binned in groups of ' + str(window_size)+')')
         #ax.set_xlim([0,17000])
-        ax.set_ylabel('z-scored peak normalised to max size')
+        ax.set_ylabel('z-scored peak')
 
     plt.show()
     return(x_vals, norm_rolling_mean_peak, x_vals_fit, y_vals_fit)
@@ -116,7 +116,7 @@ def multi_animal_scatter_and_fit(mice_dates, window_size=30, fit_type='exponenti
         ax.scatter(x_vals, norm_rolling_mean_peak, color=colours[mouse_num], label=mouse)
         if fit_type != 'None':
             ax.plot(x_vals_fit, y_vals_fit, color=colours[mouse_num])
-    ax.set_xlabel('bin (trials binned in groups of ' + str(30)+')')
+    ax.set_xlabel('trial number (trials binned in groups of ' + str(window_size)+')')
     #ax.set_xlim([0,15000])
     ax.set_ylabel('z-scored peak')
     ax.legend(loc='best')

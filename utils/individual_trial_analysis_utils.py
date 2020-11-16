@@ -68,11 +68,17 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     response_names = ['both left and right', 'left', 'right']
     outcome_names = ['incorrect', 'correct', 'both correct and incorrect']
     events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
-    if  params.state == 10:
-        omission_events = trial_data.loc[(trial_data['State type'] == params.state)]
+    if params.state == 10 or params.state == 12 or params.state == 13: # omissions, large rewards left and right
+        if params.state == 10:
+            omission_events = trial_data.loc[(trial_data['State type'] == params.state)]
+        else:
+            left_large_reward_events = trial_data.loc[(trial_data['State type'] == 12)]
+            right_large_reward_events =  trial_data.loc[(trial_data['State type'] == 13)]
+            omission_events = pd.concat([left_large_reward_events, right_large_reward_events])
+
         trials_of_int = omission_events['Trial num'].values
         omission_trials_all_states = trial_data.loc[(trial_data['Trial num'].isin(trials_of_int))]
-        events_of_int = omission_trials_all_states.loc[(omission_trials_all_states['State type'] == 4)]
+        events_of_int = omission_trials_all_states.loc[(omission_trials_all_states['State type'] == 5)] # get the action aligned trace
     else:
         events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
     if params.response != 0:
@@ -116,7 +122,10 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
 
     event_times = events_of_int[params.align_to].values
     trial_nums = events_of_int['Trial num'].values
-    state_name = events_of_int['State name'].values[0]
+    if params.state == 12 or params.state == 13:
+        state_name = 'LargeReward'
+    else:
+        state_name = events_of_int['State name'].values[0]
     other_event = np.asarray(
         np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
     next_centre_poke = get_next_centre_poke(trial_data, events_of_int)
@@ -170,18 +179,53 @@ def get_peak_each_trial(sorted_traces, time_points, sorted_other_events):
     for trial_num in range(0, len(sorted_other_events)):
         indices_to_integrate = np.where(np.logical_and(np.greater_equal(time_points, 0), np.less_equal(time_points, sorted_other_events[trial_num])))
         trial_trace = (sorted_traces[trial_num, indices_to_integrate]).T
-        trial_trace = trial_trace # - trial_trace[0]
-        trial_peak_inds = peakutils.indexes(trial_trace.flatten('F'), thres=0.3)
-        if trial_peak_inds.shape[0] > 0:
-            if len(trial_peak_inds>1):
-                trial_peak_inds = trial_peak_inds[0]
-
-            trial_peaks = trial_trace.flatten('F')[trial_peak_inds]
-            all_trials_peaks.append(trial_peaks)
+        trial_trace = trial_trace # - trial_trace[0]s
+        trial_peak_inds = peakutils.indexes(trial_trace.flatten('F'))
+        if len(trial_peak_inds>1):
+            trial_peak_inds = trial_peak_inds[0]
+        trial_peaks = trial_trace.flatten('F')[trial_peak_inds]
+        all_trials_peaks.append(trial_peaks)
         #plt.plot(trial_trace)
         #plt.scatter(trial_peak_inds, trial_peaks)
     flat_peaks = all_trials_peaks
     #plt.show()
+    return flat_peaks
+
+def get_peak_each_trial_psychometric(sorted_traces, time_points, sorted_other_events):
+    all_trials_peaks = []
+    #plt.figure()
+    for trial_num in range(0, len(sorted_other_events)):
+        indices_to_integrate = np.where(np.logical_and(np.greater_equal(time_points, 0),
+                                                       np.less_equal(time_points, sorted_other_events[trial_num])))
+        trial_trace = (sorted_traces[trial_num, indices_to_integrate]).T
+        trial_trace = trial_trace  #- trial_trace[0]
+        trial_peak_inds = peakutils.indexes(trial_trace.flatten('F'), thres=0.3)
+        if trial_peak_inds.shape[0] > 0:
+            if len(trial_peak_inds > 1):
+                trial_peak_inds = trial_peak_inds[0]
+
+            trial_peaks = trial_trace.flatten('F')[trial_peak_inds]
+        else:
+            trial_peaks = np.nan
+        all_trials_peaks.append(trial_peaks)
+            #plt.plot(trial_trace)
+           # plt.scatter(trial_peak_inds, trial_peaks)
+    flat_peaks = all_trials_peaks
+    #plt.show()
+   # plt.figure()
+    #plt.plot(np.mean(sorted_traces, axis=0))
+    return flat_peaks
+
+def get_max_each_trial(sorted_traces, time_points, sorted_other_events):
+    all_trials_peaks = []
+    plt.figure()
+    for trial_num in range(0, len(sorted_other_events)):
+        indices_to_integrate = np.where(np.logical_and(np.greater_equal(time_points, 0),
+                                                       np.less_equal(time_points, sorted_other_events[trial_num])))
+        trial_trace = (sorted_traces[trial_num, indices_to_integrate]).T
+        trial_trace = trial_trace  - trial_trace[0]
+        all_trials_peaks.append(np.max(trial_trace))
+    flat_peaks = all_trials_peaks
     return flat_peaks
 
 
@@ -321,10 +365,10 @@ class CueAlignedData(object):
         params = {'state_type_of_interest': 3,
             'outcome': 2,
             'last_outcome': 0,  # NOT USED CURRENTLY
-            'no_repeats' : 1,
+            'no_repeats' : 0,
             'last_response': 0,
             'align_to' : 'Time start',
-            'instance': 1,
+            'instance': -1,
             'plot_range': [-6, 6],
             'first_choice_correct': 0,
             'cue': None}
@@ -382,15 +426,15 @@ class RewardAlignedData(object):
         contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
 
         params = {'state_type_of_interest': 5,
-            'outcome': 1,
-            'last_outcome': 0,  # NOT USED CURRENTLY
-            'no_repeats' : 0,
-            'last_response': 0,
-            'align_to' : 'Time end',
-            'instance': -1,
-            'plot_range': [-6, 6],
-            'first_choice_correct': 1,
-            'cue': None}
+                  'outcome': 1,
+                  'last_outcome': 0,  # NOT USED CURRENTLY
+                  'no_repeats': 0,
+                  'last_response': 0,
+                  'align_to': 'Time end',
+                  'instance': -1,
+                  'plot_range': [-6, 6],
+                  'first_choice_correct': 1,
+                  'cue': 'None'}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
 

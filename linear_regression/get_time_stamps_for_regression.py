@@ -31,8 +31,8 @@ def add_timestamps_to_aligned_data(experiments_to_add):
         pickle.dump(session_events, open(save_filename, "wb"))
 
 if __name__ == '__main__':
-    mouse_id = 'SNL_photo25'
-    date = '20200813'
+    mouse_id = 'SNL_photo19'
+    date = 'all'
     all_experiments = get_all_experimental_records()
 
     if (mouse_id =='all') & (date == 'all'):

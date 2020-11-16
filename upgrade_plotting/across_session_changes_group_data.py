@@ -69,9 +69,9 @@ def remove_experiments(experiments, ones_to_remove):
 
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo19']
-    date = '20200206'
-    experiments_to_remove = {'SNL_photo21': ['20200805'], 'SNL_photo25': ['20200812']}
+    mouse_ids = ['SNL_photo17']
+    early_date = '20200206'
+    late_date = '20200311'
     all_experiments = get_all_experimental_records()
     all_experiments = remove_experiments(all_experiments, experiments_to_remove)
     align_to = 'choice'

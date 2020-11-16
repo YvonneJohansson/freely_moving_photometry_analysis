@@ -4,9 +4,8 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 
 import nptdms
 import numpy as np
-import pandas as pd
-from utils.demodulation import lerner_deisseroth_preprocess, demodulate, smooth_with_window_mean
-import utils.bpod_data_processing as bpod
+from data_preprocessing.demodulation import demodulate
+import data_preprocessing.bpod_data_processing as bpod
 
 
 from scipy.signal import medfilt, butter, filtfilt

@@ -5,12 +5,10 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 
 import nptdms
 import numpy as np
-import pandas as pd
-from utils.demodulation import lerner_deisseroth_preprocess
-from utils.demodulation import demodulate
-import utils.bpod_data_processing as bpod
-from session_traces_and_mean import get_all_experimental_records
-import scipy.signal
+from data_preprocessing.demodulation import lerner_deisseroth_preprocess
+from data_preprocessing.demodulation import demodulate
+import data_preprocessing.bpod_data_processing as bpod
+from data_preprocessing.session_traces_and_mean import get_all_experimental_records
 
 from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
@@ -156,7 +154,7 @@ def pre_process_experiments(experiments, method='pyphotometry', protocol='Two_Al
 
 if __name__ == "__main__":
     mouse_ids = ['SNL_photo26']
-    date = '20200915'
+    date = '20201009'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
         if (mouse_id =='all') & (date == 'all'):

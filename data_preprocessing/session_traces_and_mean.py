@@ -29,9 +29,16 @@ def add_experiment_to_aligned_data(experiments_to_add):
         save_filename = saving_folder + aligned_filename
         pickle.dump(session_traces, open(save_filename, "wb"))
 
+def remove_experiments(experiments, ones_to_remove):
+    for mouse in ones_to_remove.keys():
+        for date in ones_to_remove[mouse]:
+            index_to_remove = experiments[(experiments['mouse_id'] == mouse) & (experiments['date'] == date)].index[0]
+            experiments = experiments.drop(index=index_to_remove)
+    return experiments
+
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo22']
+    mouse_ids = [ 'SNL_photo16', 'SNL_photo17', 'SNL_photo18']
     date = 'all'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
