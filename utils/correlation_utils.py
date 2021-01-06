@@ -89,15 +89,15 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
         y_vals_fit = None
 
     if plotting:
-        fig, ax = plt.subplots(1, ncols=1, figsize=(10, 8))
+        fig, ax = plt.subplots(1, ncols=1, figsize=(4, 3))
         fig.subplots_adjust(hspace=0.5, wspace=0.2)
-        ax.scatter(x_vals, norm_rolling_mean_peak, color='#3F888F')
+        ax.scatter(x_vals, norm_rolling_mean_peak, color='#3F888F', s=8)
         if fit_line != 'None':
             ax.plot(x_vals_fit, y_vals_fit, color='grey')
-        ax.set_xlabel('bin (trials binned in groups of ' + str(window_size)+')')
+        ax.set_xlabel('trial number(binned in groups of ' + str(window_size)+')', size=13)
         #ax.set_xlim([0,17000])
-        ax.set_ylabel('z-scored peak')
-
+        ax.set_ylabel('z-scored peak', size=13)
+    plt.tight_layout()
     plt.show()
     return(x_vals, norm_rolling_mean_peak, x_vals_fit, y_vals_fit)
 

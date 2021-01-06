@@ -14,10 +14,10 @@ if not os.path.exists(processed_data_dir):
 all_experiments = get_all_experimental_records()
 block_types = pd.DataFrame({'block type': [1, 2, 3, 4, 5], 'left reward': [6, 4, 2, 2, 2], 'right reward': [2, 2, 2, 4, 6]})
 
-mice = ['SNL_photo21', 'SNL_photo22', 'SNL_photo26']
-sessions = ['20200917', '20200918', '20200921']
+mice =['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35'] #['SNL_photo21', 'SNL_photo22', 'SNL_photo26'] for tail
+sessions = ['20201219'] #['20200917', '20200918', '20200921'] for tail
 
-block_data_file = os.path.join(processed_data_dir, 'block_data_all_mice.csv')
+block_data_file = os.path.join(processed_data_dir, 'block_data_nacc_mice.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)
@@ -30,7 +30,7 @@ else:
                 one_reward_block_data = {}
                 print(reward_block)
                 try:
-                    params = {'state_type_of_interest': 5,
+                    params = {'state_type_of_interest': 3, # 5 for tail
                         'outcome': 2,
                         'last_outcome': 0,  # NOT USED CURRENTLY
                         'no_repeats' : 1,
@@ -84,8 +84,8 @@ timepoints = all_reward_block_data['time points'].iloc[0]
 
 all_reward_block_data['Experiment'] = exp_name
 
-plot_mean_trace_for_condition(all_reward_block_data[all_reward_block_data['mouse'] == 'SNL_photo22'], timepoints,
-                              'contra reward amount', error_bar_method='ci', save_location=processed_data_dir)
+#plot_mean_trace_for_condition(all_reward_block_data[all_reward_block_data['mouse'] == 'SNL_photo28'], timepoints,
+#                              'contra reward amount', error_bar_method='ci', save_location=processed_data_dir)
 
-plot_mean_trace_for_condition(all_reward_block_data[all_reward_block_data['mouse'] == 'SNL_photo22'], timepoints,
-                              'relative reward amount', error_bar_method = 'ci', save_location=processed_data_dir)
+#plot_mean_trace_for_condition(all_reward_block_data[all_reward_block_data['mouse'] == 'SNL_photo28'], timepoints,
+#                              'relative reward amount', error_bar_method = 'ci', save_location=processed_data_dir)

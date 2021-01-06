@@ -13,10 +13,10 @@ if not os.path.exists(processed_data_dir):
     os.makedirs(processed_data_dir)
 
 all_experiments = get_all_experimental_records()
-mice = ['SNL_photo25']
-sessions = ['20201009']
+mice = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
+sessions = ['20201221', '20201222']
 
-block_data_file = os.path.join(processed_data_dir, 'reward_change_data_SNL_photo25.csv')
+block_data_file = os.path.join(processed_data_dir, 'all_nacc_reward_change_data.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)

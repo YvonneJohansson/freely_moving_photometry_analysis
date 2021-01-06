@@ -6,3 +6,4 @@
 utils/__pycache__/
 utils/value_change_data/
 upgrade_plotting/__pycache__/
+sesstrace.prof

@@ -83,6 +83,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
     if params.response != 0:
         events_of_int = events_of_int.loc[events_of_int['Response'] == params.response]
+    print(events_of_int.shape)
     if params.first_choice != 0:
         events_of_int = events_of_int.loc[events_of_int['First response'] == params.first_choice]
     if params.last_response != 0:
@@ -99,8 +100,6 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     elif params.cue == 'low':
         events_of_int = events_of_int.loc[events_of_int['Trial type'] == 1]
 
-
-
     if params.state == 10:
         title = title + ' ' + 'omission'
     else:
@@ -116,9 +115,12 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     elif params.instance == 0:
         events_of_int = events_of_int
 
-    if params.first_choice_correct != 0:
+    if params.first_choice_correct == 1:
         events_of_int = events_of_int.loc[
             (events_of_int['First choice correct'] == 1)]
+    elif params.first_choice_correct == -1:
+        events_of_int = events_of_int.loc[
+            (events_of_int['First choice correct'] == 0)]
 
     event_times = events_of_int[params.align_to].values
     trial_nums = events_of_int['Trial num'].values

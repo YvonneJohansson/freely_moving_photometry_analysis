@@ -46,7 +46,7 @@ def plot_reaction_times_overlayed(mouse, dates):
     plt.show()
 
 
-def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'):
+def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail', side='contra'):
     session_starts = get_bpod_trial_nums_per_session(mouse, dates)
     saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
     all_peaks = []
@@ -63,14 +63,46 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
             data = pickle.load(f)
         if recording_site == 'tail':
             recording_site_data = data.choice_data.contra_data
+            actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
+            all_actual_trial_numbers.append(actual_trial_numbers)
+            all_trial_numbers.append(len(recording_site_data.reaction_times))
+            all_reaction_times.append(recording_site_data.reaction_times)
+            all_peaks.append(data.choice_data.contra_data.trial_peaks)
+            all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
+                                      stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
         elif recording_site == 'Nacc':
-            recording_site_data = data.cue_data.contra_data
-        actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
-        all_actual_trial_numbers.append(actual_trial_numbers)
-        all_trial_numbers.append(len(recording_site_data.reaction_times))
-        all_reaction_times.append(recording_site_data.reaction_times)
-        all_peaks.append(data.choice_data.contra_data.trial_peaks )
-        all_bins.append(np.arange(start=min(recording_site_data.reaction_times), stop=max(recording_site_data.reaction_times)+0.1, step=0.1))
+            if side == 'contra':
+                recording_site_data = data.cue_data.contra_data
+                actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
+                all_actual_trial_numbers.append(actual_trial_numbers)
+                all_trial_numbers.append(len(recording_site_data.reaction_times))
+                all_reaction_times.append(recording_site_data.reaction_times)
+                all_peaks.append(data.cue_data.contra_data.trial_peaks)
+                all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
+                                          stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
+
+            elif side == 'ipsi':
+                recording_site_data = data.cue_data.ipsi_data
+                actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
+                all_actual_trial_numbers.append(actual_trial_numbers)
+                all_trial_numbers.append(len(recording_site_data.reaction_times))
+                all_reaction_times.append(recording_site_data.reaction_times)
+                all_peaks.append(data.cue_data.ipsi_data.trial_peaks)
+                all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
+                                          stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
+
+            else:
+                contra_data = data.cue_data.contra_data
+                ipsi_data = data.cue_data.ipsi_data
+                contra_trial_numbers = contra_data.trial_nums + session_starts[date_num]
+                ipsi_trial_numbers = ipsi_data.trial_nums + session_starts[date_num]
+                all_actual_trial_numbers.append(np.concatenate((contra_trial_numbers, ipsi_trial_numbers)))
+                all_trial_numbers.append(len(contra_data.reaction_times) + len(ipsi_data.trial_nums))
+                all_reaction_times.append(np.concatenate((contra_data.reaction_times, ipsi_data.reaction_times)))
+                all_peaks.append(np.concatenate((data.cue_data.contra_data.trial_peaks, data.cue_data.ipsi_data.trial_peaks)))
+                all_bins.append(np.arange(start=min(all_reaction_times[-1]), stop=max(all_reaction_times[-1])+0.1, step=0.1))
+
+
     flattened_actual_trial_nums = [item for sublist in all_actual_trial_numbers for item in sublist]
     flattened_reaction_times = [item for sublist in all_reaction_times for item in sublist]
     all_trial_nums = np.arange(1, np.sum(all_trial_numbers) + 1, step=1)
@@ -79,8 +111,9 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
                                            np.less_equal(flattened_reaction_times, median_reaction_time + window_around_mean)))
     flattened_peaks = [item for sublist in all_peaks for item in sublist]
     for i, val in enumerate(flattened_peaks):
-        if val.size == 0:
-            flattened_peaks[i] = np.nan
+        if type(val) != float:
+            if val.size == 0:
+                flattened_peaks[i] = np.nan
     valid_peaks = np.array(flattened_peaks)[valid_trials]
     valid_trial_nums = np.array(flattened_actual_trial_nums)[valid_trials]
     valid_reaction_times = np.array(flattened_reaction_times)[valid_trials]

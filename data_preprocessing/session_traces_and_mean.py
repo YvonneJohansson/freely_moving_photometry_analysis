@@ -6,6 +6,7 @@ import numpy as np
 import pickle
 from utils.individual_trial_analysis_utils import SessionData
 import pandas as pd
+import os
 
 def get_all_experimental_records():
     experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
@@ -14,19 +15,18 @@ def get_all_experimental_records():
 
 
 def add_experiment_to_aligned_data(experiments_to_add):
+    data_root = r'W:\photometry_2AC\processed_data'
     for index, experiment in experiments_to_add.iterrows():
-        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + experiment['mouse_id'] + '\\'
-        restructured_data_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'restructured_data.pkl'
-        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
-        dff_trace_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'smoothed_signal.npy'
-        dff = np.load(saving_folder + dff_trace_filename)
+        saving_folder = os.path.join(data_root, experiment['mouse_id'])
+        if not os.path.exists(saving_folder):
+            os.makedirs(saving_folder)
 
         session_traces = SessionData(experiment['fiber_side'], experiment['recording_site'], experiment['mouse_id'], experiment['date'])
         session_traces.get_choice_responses()
         session_traces.get_cue_responses()
         session_traces.get_reward_responses()
         aligned_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'aligned_traces.p'
-        save_filename = saving_folder + aligned_filename
+        save_filename = os.path.join(saving_folder, aligned_filename)
         pickle.dump(session_traces, open(save_filename, "wb"))
 
 def remove_experiments(experiments, ones_to_remove):
@@ -38,8 +38,8 @@ def remove_experiments(experiments, ones_to_remove):
 
 
 if __name__ == '__main__':
-    mouse_ids = [ 'SNL_photo16', 'SNL_photo17', 'SNL_photo18']
-    date = 'all'
+    mouse_ids = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+    date = '20201214'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
 

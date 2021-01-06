@@ -9,7 +9,7 @@ from data_preprocessing.demodulation import lerner_deisseroth_preprocess
 from data_preprocessing.demodulation import demodulate
 import data_preprocessing.bpod_data_processing as bpod
 from data_preprocessing.session_traces_and_mean import get_all_experimental_records
-
+import os
 from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
 
@@ -73,7 +73,7 @@ def pre_process_experiment_pyphotometry(mouse, date, protocol):
     clock = data.group_channels('acq_task')[3].data
     stim_trigger = data.group_channels('acq_task')[4].data
     stim_trigger_gaps = np.diff(stim_trigger)
-    trial_start_ttls_daq_samples = np.where(stim_trigger_gaps > 2.6)
+    trial_start_ttls_daq_samples = np.where(stim_trigger_gaps > 2.595)
     trial_start_ttls_daq = trial_start_ttls_daq_samples[0] / 10000
     daq_num_trials = trial_start_ttls_daq.shape[0]
     bpod_num_trials = trial_raw_events.shape[0]
@@ -130,6 +130,8 @@ def pre_process_experiment_pyphotometry(mouse, date, protocol):
     restructured_data = bpod.restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pulses)
 
     saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
+    if not os.path.exists(saving_folder):
+        os.makedirs(saving_folder)
     demod_trace_filename = mouse + '_' + date + '_' + 'demod_signal.npy'
     smoothed_trace_filename = mouse + '_' + date + '_' + 'smoothed_signal.npy'
     background_filename = mouse + '_' + date + '_' + 'background.npy'
@@ -153,8 +155,8 @@ def pre_process_experiments(experiments, method='pyphotometry', protocol='Two_Al
 
 
 if __name__ == "__main__":
-    mouse_ids = ['SNL_photo26']
-    date = '20201009'
+    mouse_ids = ['SNL_photo34', 'SNL_photo35'] #, 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+    date = '20201222'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
         if (mouse_id =='all') & (date == 'all'):
@@ -165,5 +167,5 @@ if __name__ == "__main__":
             experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
         elif (mouse_id != 'all') & (date != 'all'):
             experiments_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
-        pre_process_experiments(experiments_to_process, method='pyphotometry')
+        pre_process_experiments(experiments_to_process, method='pyphotometry', protocol='Two_Alternative_Choice')
 

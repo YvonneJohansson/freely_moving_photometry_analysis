@@ -27,29 +27,52 @@ def plot_mean_traces(experiments_to_add, axis, side='contra', align_to = 'choice
         if align_to == 'reward':
             if side == 'contra':
                 data = reward_data.contra_data
-            else:
+                mean_trace = decimate(data.mean_trace, 10)
+                sorted_traces = decimate(data, 10)
+            elif side == 'ipsi':
                 data = reward_data.ipsi_data
+                mean_trace = decimate(data.mean_trace, 10)
+                sorted_traces = decimate(data, 10)
+            else:
+                data = np.concatenate((reward_data.contra_data.sorted_traces, reward_data.ipsi_data.sorted_traces))
+                sorted_traces = decimate(data, 10)
+                mean_trace = np.mean(sorted_traces, 0)
+
         elif align_to == 'choice':
             if side == 'contra':
                 data = choice_data.contra_data
-            else:
+                mean_trace = decimate(data.mean_trace, 10)
+                sorted_traces = decimate(data.sorted_traces, 10)
+            elif side == 'ipsi':
                 data = choice_data.ipsi_data
+                mean_trace = decimate(data.mean_trace, 10)
+                sorted_traces = decimate(data.sorted_traces, 10)
+            else:
+                data = np.concatenate((choice_data.contra_data.sorted_traces, choice_data.ipsi_data.sorted_traces))
+                sorted_traces = decimate(data, 10)
+                mean_trace = np.mean(sorted_traces, 0)
         elif align_to == 'cue':
             if side == 'contra':
                 data = cue_data.contra_data
-            else:
+                mean_trace = decimate(data.mean_trace, 10)
+                sorted_traces = decimate(data.sorted_traces, 10)
+            elif side == 'ipsi':
                 data = cue_data.ipsi_data
+                mean_trace = decimate(data.mean_trace, 10)
+                sorted_traces = decimate(data.sorted_traces, 10)
+            else:
+                data = np.concatenate((cue_data.contra_data.sorted_traces, cue_data.ipsi_data.sorted_traces))
+                sorted_traces = decimate(data, 10)
+                mean_trace = np.mean(sorted_traces, 0)
+
 
         time_points = decimate(choice_data.ipsi_data.time_points, 10)
-
-        mean_trace = decimate(data.mean_trace, 10)
-        sorted_traces = decimate(data.sorted_traces, 10)
         axis.plot(time_points, mean_trace, color=colours[index])
         axis.set_xlim([-1, 2])
         axis.set_xlabel('Time (s)')
         axis.axvline(0, color='k')
         axis.set_ylabel('zscore')
-        axis.set_ylim([-1, 2])
+        #axis.set_ylim([-1, 2])
 
         if error_bar_method is not None:
             error_bar_lower, error_bar_upper = calculate_error_bars(mean_trace,
@@ -69,13 +92,14 @@ def remove_experiments(experiments, ones_to_remove):
 
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo19']
-    date = '20200206'
-    experiments_to_remove = {'SNL_photo21': ['20200805'], 'SNL_photo25': ['20200812']}
+    mouse_ids = ['SNL_photo31']
+    date = 'all'
+    experiments_to_remove = {'SNL_photo21': ['20200805'], 'SNL_photo25': ['20200812'], 'SNL_photo31':  ['20201211', '20201214','20201216', '20201218', '20201219', '20201221', '20201222']}
     all_experiments = get_all_experimental_records()
     all_experiments = remove_experiments(all_experiments, experiments_to_remove)
-    align_to = 'choice'
-    recording_site = 'tail'
+    align_to = 'cue'
+    recording_site = 'Nacc'
+    side = ''
 
     for mouse_id in mouse_ids:
         if (mouse_id == 'all') & (date == 'all'):
@@ -103,11 +127,16 @@ if __name__ == '__main__':
 
                 else:
                     plot_mean_traces(recording_site_experiments, axs[1], axs[0], align_to=align_to)
-        else:
-            fig, axs = plt.subplots(nrows=2, ncols=1, sharey=True)
+        elif side != 'both':
+            fig, axs = plt.subplots(nrows=1, ncols=2, sharey=True)
             recording_site_experiments = experiments_to_process[experiments_to_process['recording_site'] == recording_site]
             plot_mean_traces(recording_site_experiments, axs[0], side='contra', align_to=align_to, error_bar_method='sem')
             plot_mean_traces(recording_site_experiments, axs[1], side='ipsi', align_to=align_to, error_bar_method='sem')
+        else:
+            fig, axs = plt.subplots(nrows=1, ncols=1, sharey=True)
+            recording_site_experiments = experiments_to_process[experiments_to_process['recording_site'] == recording_site]
+            plot_mean_traces(recording_site_experiments, axs, side='both', align_to=align_to, error_bar_method='sem')
+
 
         #fig.suptitle(mouse_id)
     plt.show()
