@@ -30,19 +30,32 @@ def add_timestamps_to_aligned_data(experiments_to_add):
         save_filename = saving_folder + aligned_filename
         pickle.dump(session_events, open(save_filename, "wb"))
 
+def remove_manipulation_days(experiments):
+    exemption_list = ['psychometric', 'state change medium cloud', 'value blocks', 'state change white noise', 'omissions and large rewards']
+    exemptions = '|'.join(exemption_list)
+    index_to_remove = experiments[np.logical_xor(experiments['include'] == 'no', experiments['experiment_notes'].str.contains(exemptions, na=False))].index
+    cleaned_experiments = experiments.drop(index=index_to_remove)
+    return cleaned_experiments
+
+
 if __name__ == '__main__':
-    mouse_id = 'SNL_photo19'
+    mouse_id = 'SNL_photo26'
     date = 'all'
     all_experiments = get_all_experimental_records()
+    clean_experiments = remove_manipulation_days(all_experiments)
+    site = 'tail'
+    index_to_remove = clean_experiments[clean_experiments['recording_site'] != site].index
+    cleaned_experiments = clean_experiments.drop(index=index_to_remove)
+
 
     if (mouse_id =='all') & (date == 'all'):
-        experiments_to_process = all_experiments
+        experiments_to_process = cleaned_experiments
     elif (mouse_id == 'all') & (date != 'all'):
-        experiments_to_process = all_experiments[all_experiments['date'] == date]
+        experiments_to_process = cleaned_experiments[cleaned_experiments['date'] == date]
     elif (mouse_id != 'all') & (date == 'all'):
-        experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
+        experiments_to_process = cleaned_experiments[cleaned_experiments['mouse_id'] == mouse_id]
     elif (mouse_id != 'all') & (date != 'all'):
-        experiments_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
+        experiments_to_process = cleaned_experiments[(cleaned_experiments['date'] == date) & (cleaned_experiments['mouse_id'] == mouse_id)]
     add_timestamps_to_aligned_data(experiments_to_process)
 
 

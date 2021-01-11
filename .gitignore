@@ -7,3 +7,6 @@ utils/__pycache__/
 utils/value_change_data/
 upgrade_plotting/__pycache__/
 sesstrace.prof
+data_preprocessing/__pycache__/
+linear_regression/__pycache__/
+test.py
