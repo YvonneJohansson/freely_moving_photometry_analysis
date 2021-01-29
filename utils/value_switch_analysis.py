@@ -12,33 +12,35 @@ if not os.path.exists(processed_data_dir):
     os.makedirs(processed_data_dir)
 
 all_experiments = get_all_experimental_records()
-block_types = pd.DataFrame({'block type': [1, 2, 3, 4, 5], 'left reward': [6, 4, 2, 2, 2], 'right reward': [2, 2, 2, 4, 6]})
-
+#block_types = pd.DataFrame({'block type': [1, 2, 3, 4, 5], 'left reward': [6, 4, 2, 2, 2], 'right reward': [2, 2, 2, 4, 6]})
+block_types = pd.DataFrame({'block type': [0, 1, 5], 'left reward': [2, 6, 2], 'right reward': [2, 2, 6]})
 mice =['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35'] #['SNL_photo21', 'SNL_photo22', 'SNL_photo26'] for tail
-sessions = ['20201218', '20201219'] #['20200917', '20200918', '20200921'] for tail
+#sessions = ['20210126', '20210127'] #['20200917', '20200918', '20200921'] for tail
 
-block_data_file = os.path.join(processed_data_dir, 'block_data_nacc_mice.csv')
+block_data_file = os.path.join(processed_data_dir, 'value_switch_nacc_mice.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)
 else:
     for mouse_num, mouse_id in enumerate(mice):
+        sessions = all_experiments[(all_experiments['mouse_id'] == mouse_id) & (all_experiments['experiment_notes'] == 'value switch')]['date'].values
         for session_idx, date in enumerate(sessions):
             experiment_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
             behavioural_data, session_data = open_experiment(experiment_to_process)
-            for reward_block in range(1,6):
+            #for reward_block in range(1,6):
+            for reward_block in ([0, 1, 5]):
                 one_reward_block_data = {}
                 print(reward_block)
                 try:
                     params = {'state_type_of_interest': 3, # 5 for tail
-                        'outcome': 2,
+                        'outcome': 1,
                         'last_outcome': 0,  # NOT USED CURRENTLY
                         'no_repeats' : 1,
                         'last_response': 0,
                         'align_to' : 'Time start',
                         'instance':- 1,
                         'plot_range': [-6, 6],
-                        'first_choice_correct': 0,
+                        'first_choice_correct': 1,
                          'cue': 'None'}
                     reward_block_data = CustomAlignedDataRewardBlocks(session_data, params, reward_block)
                     contra_side = reward_block_data.contra_fiber_side_numeric
@@ -71,7 +73,7 @@ else:
                     one_reward_block_dataf['traces'] = pd.Series(list_traces, index=one_reward_block_dataf.index)
                     one_reward_block_dataf['time points'] = pd.Series([reward_block_data.contra_data.time_points] *
                                                                      len(list_traces), index=one_reward_block_dataf.index)
-                    if (reward_block > 1) or (session_idx > 0) or (mouse_num > 0):
+                    if (reward_block > 0) or (session_idx > 0) or (mouse_num > 0):
                         all_reward_block_data = pd.concat([all_reward_block_data, one_reward_block_dataf], ignore_index=True)
                     else:
                         all_reward_block_data = one_reward_block_dataf

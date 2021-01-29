@@ -38,8 +38,8 @@ def remove_experiments(experiments, ones_to_remove):
 
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
-    date = '20201214'
+    mouse_ids = ['SNL_photo30']
+    date = '20210119'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
 

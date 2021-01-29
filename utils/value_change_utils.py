@@ -307,3 +307,52 @@ def plot_mean_trace_for_condition(ax, block_change_info, time_points, key, error
     #ax.set_title(key)
     #lg = ax.legend(title=leg_title, bbox_to_anchor=(1., 1.), fontsize=14)
     #lg.get_title().set_fontsize(14)
+
+
+def plot_mean_trace_for_condition_value_switch(ax, block_change_info, time_points, key, session_id, error_bar_method=None, save_location=None):
+    mouse = block_change_info['mouse'].iloc[0]
+    if key == 'contra reward amount':
+        condition = 'abs'
+        leg_title = 'Absolute reward value (uL)'
+    elif key == 'relative reward amount':
+        condition = 'rel'
+        leg_title = 'Relative reward value (uL)'
+    else:
+        raise ValueError('Condition not recognised')
+
+    reward_amounts = np.sort(block_change_info[key].unique())
+    colours = cm.inferno(np.linspace(0, 0.8, reward_amounts.shape[0]))
+    time_points = decimate(time_points, 10)
+    for reward_indx, reward_amount in enumerate(reward_amounts):
+        rows = block_change_info[(block_change_info[key] == reward_amount)]
+        traces = rows['traces'].values
+        flat_traces = np.zeros([traces.shape[0], traces[0].shape[0]])
+        for idx, trace in enumerate(traces):
+            flat_traces[idx, :] = trace
+        mean_trace = decimate(np.mean(flat_traces, axis=0), 10)
+        ax.plot(time_points, mean_trace, lw=1.5, color=colours[reward_indx], label=reward_amount)
+        if error_bar_method is not None:
+            # bootstrapping takes a long time. calculate once and save:
+            filename = 'errors_{}_{}_{}_{}_{}.npz'.format(mouse, condition, int(reward_amount), 'value_switch', session_id)
+            if not os.path.isfile(os.path.join(save_location, filename)):
+                error_bar_lower, error_bar_upper = calculate_error_bars(mean_trace,
+                                                                        decimate(flat_traces, 10),
+                                                                        error_bar_method=error_bar_method)
+                np.savez(os.path.join(save_location, filename), error_bar_lower=error_bar_lower,
+                         error_bar_upper=error_bar_upper)
+            else:
+                error_info = np.load(os.path.join(save_location, filename))
+                error_bar_lower = error_info['error_bar_lower']
+                error_bar_upper = error_info['error_bar_upper']
+            ax.fill_between(time_points, error_bar_lower, error_bar_upper, alpha=0.5,
+                            facecolor=colours[reward_indx], linewidth=0)
+
+    ax.axvline(0, color='k')
+    ax.set_xlim([-2, 2])
+    ax.set_xlabel('time (s)')
+    ax.set_ylabel('z-scored fluorescence')
+    # ax.set_title(key)
+    # lg = ax.legend(title=leg_title, bbox_to_anchor=(1., 1.), fontsize=14)
+    # lg.get_title().set_fontsize(14)
+
+

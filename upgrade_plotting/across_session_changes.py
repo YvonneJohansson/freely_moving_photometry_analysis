@@ -6,6 +6,7 @@ import numpy as np
 from utils.plotting import calculate_error_bars
 import matplotlib
 from scipy.signal import decimate
+from utils.post_processing_utils import remove_manipulation_days
 
 
 def plot_mean_traces(experiments_to_add, axis, side='contra', align_to = 'choice', error_bar_method=None):
@@ -92,25 +93,26 @@ def remove_experiments(experiments, ones_to_remove):
 
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo31']
+    mouse_ids = ['SNL_photo35']
     date = 'all'
-    experiments_to_remove = {'SNL_photo21': ['20200805'], 'SNL_photo25': ['20200812'], 'SNL_photo31':  ['20201211', '20201214','20201216', '20201218', '20201219', '20201221', '20201222']}
+    experiments_to_remove = {'SNL_photo21': ['20200805'], 'SNL_photo25': ['20200812'], 'SNL_photo34':  ['20201211', '20201214','20201216', '20201218', '20201219', '20201221', '20201222']}
     all_experiments = get_all_experimental_records()
     all_experiments = remove_experiments(all_experiments, experiments_to_remove)
-    align_to = 'cue'
+    cleaned_experiments = remove_manipulation_days(all_experiments)
+    align_to = 'reward'
     recording_site = 'Nacc'
-    side = ''
+    side = 'both'
 
     for mouse_id in mouse_ids:
         if (mouse_id == 'all') & (date == 'all'):
-            experiments_to_process = all_experiments
+            experiments_to_process = cleaned_experiments
         elif (mouse_id == 'all') & (date != 'all'):
-            experiments_to_process = all_experiments[all_experiments['date'] == date]
+            experiments_to_process = cleaned_experiments[cleaned_experiments['date'] == date]
         elif (mouse_id != 'all') & (date == 'all'):
-            experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
+            experiments_to_process = cleaned_experiments[cleaned_experiments['mouse_id'] == mouse_id]
         elif (mouse_id != 'all') & (date != 'all'):
-            experiments_to_process = all_experiments[
-                (all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
+            experiments_to_process = cleaned_experiments[
+                (cleaned_experiments['date'] == date) & (cleaned_experiments['mouse_id'] == mouse_id)]
 
         recording_sites = experiments_to_process['recording_site'].unique()
         num_sites = recording_sites.shape[0]

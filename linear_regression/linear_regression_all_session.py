@@ -12,11 +12,16 @@ import pandas as pd
 import pickle
 from utils.linear_regression_utils import *
 import gc
+from linear_regression.get_time_stamps_for_regression import remove_manipulation_days
+mouse_ids = ['SNL_photo26']
+site = 'tail'
 
 experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
 experiment_record['date'] = experiment_record['date'].astype(str)
+clean_experiments = remove_manipulation_days(experiment_record)
+experiments_to_process = clean_experiments[(clean_experiments['mouse_id'].isin(mouse_ids)) & (clean_experiments['recording_site'] == site)]
 
-for index, experiment in experiment_record.iterrows():
+for index, experiment in experiments_to_process.iterrows():
     mouse = experiment['mouse_id']
     date = experiment['date']
     print('proccessing' + mouse + date)

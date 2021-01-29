@@ -24,10 +24,20 @@ class CustomAlignedData(object):
             self.contra_data.get_peaks()
             self.ipsi_data.get_peaks()
 
+
 def get_all_experimental_records():
     experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
     experiment_record['date'] = experiment_record['date'].astype(str)
     return experiment_record
+
+
+def remove_manipulation_days(experiments):
+    exemption_list = ['psychometric', 'state change medium cloud', 'value blocks', 'state change white noise', 'omissions and large rewards']
+    exemptions = '|'.join(exemption_list)
+    index_to_remove = experiments[np.logical_xor(experiments['include'] == 'no', experiments['experiment_notes'].str.contains(exemptions, na=False))].index
+    cleaned_experiments = experiments.drop(index=index_to_remove)
+    return cleaned_experiments
+
 
 def open_experiment(experiment_to_add):
     for index, experiment in experiment_to_add.iterrows():
