@@ -240,6 +240,7 @@ class SessionData(object):
         self.choice_data = None
         self.cue_data = None
         self.reward_data = None
+        self.outcome_data = None
 
     def get_choice_responses(self):
         self.choice_data = ChoiceAlignedData(self)
@@ -249,6 +250,9 @@ class SessionData(object):
 
     def get_reward_responses(self):
         self.reward_data = RewardAlignedData(self)
+
+    def get_outcome_responses(self):
+        self.outcome_data = RewardAndNoRewardAlignedData(self)
 
 
 class SessionEvents(object):
@@ -385,6 +389,44 @@ class CueAlignedData(object):
         params['cue'] = 'low'
         self.low_cue_data = ZScoredTraces(trial_data, dff, params, 0, 0)
 
+class CueAlignedSidedData(object):
+    def __init__(self, session_data):
+        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
+        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+        dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
+        dff = np.load(saving_folder + dff_trace_filename)
+
+        fiber_options = np.array(['left', 'right'])
+        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
+        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
+
+        params = {'state_type_of_interest': 3,
+            'outcome': 2,
+            'last_outcome': 0,  # NOT USED CURRENTLY
+            'no_repeats' : 0,
+            'last_response': 0,
+            'align_to' : 'Time start',
+            'instance': -1,
+            'plot_range': [-6, 6],
+            'first_choice_correct': 0,
+            'cue': None}
+
+        self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.ipsi_data.get_peaks()
+        self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+        self.contra_data.get_peaks()
+
+        params['cue'] = 'high'
+        self.high_cue_ipsi_data =  ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.high_cue_contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
+        params['cue'] = 'low'
+        self.low_cue_ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
+        self.low_cue_contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric,
+                                                  contra_fiber_side_numeric)
+
+
 class CueAlignedEvents(object):
     def __init__(self, session_data):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
@@ -470,6 +512,39 @@ class RewardAlignedEvents(object):
 
         self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+
+
+class RewardAndNoRewardAlignedData(object):
+    def __init__(self, session_data):
+        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
+        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+        dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
+        dff = np.load(saving_folder + dff_trace_filename)
+        response = 0
+
+        params = {'state_type_of_interest': 5,
+                  'outcome': 0,
+                  'last_outcome': 0,  # NOT USED CURRENTLY
+                  'no_repeats': 0,
+                  'last_response': 0,
+                  'align_to': 'Time end',
+                  'instance': -1,
+                  'plot_range': [-6, 6],
+                  'first_choice_correct': -1,
+                  'cue': 'None'}
+        self.no_reward_data = ZScoredTraces(trial_data, dff, params, response, response)
+        params = {'state_type_of_interest': 5,
+                  'outcome': 1,
+                  'last_outcome': 0,  # NOT USED CURRENTLY
+                  'no_repeats': 0,
+                  'last_response': 0,
+                  'align_to': 'Time end',
+                  'instance': -1,
+                  'plot_range': [-6, 6],
+                  'first_choice_correct': 1,
+                  'cue': 'None'}
+        self.reward_data = ZScoredTraces(trial_data, dff, params, response, response)
 
 
 

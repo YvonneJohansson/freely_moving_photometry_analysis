@@ -202,7 +202,7 @@ def line_plot_dff(x_vals, y_vals, ax, x_range):
     ax.set_xlim(x_range)
 
 
-def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='sem', sort=False, white_dot='default'):
+def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range=None, error_bar_method='sem', sort=False, white_dot='default'):
     mean_trace = decimate(one_side_data.mean_trace, 10)
     time_points = decimate(one_side_data.time_points, 10)
     traces = decimate(one_side_data.sorted_traces, 10)
@@ -249,11 +249,12 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range, error_bar_method='se
     ax2.set_ylim([one_side_data.sorted_traces.shape[0], 0])
     ax2.set_xlabel('Time (s)')
     ax2.set_ylabel('Trial (sorted)')
-    vmin = dff_range[0]
-    vmax = dff_range[1]
-    edge = max(abs(vmin), abs(vmax))
-    norm = colors.Normalize(vmin=vmin, vmax=vmax)
-    heat_im.set_norm(norm)
+    if dff_range:
+        vmin = dff_range[0]
+        vmax = dff_range[1]
+        edge = max(abs(vmin), abs(vmax))
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+        heat_im.set_norm(norm)
     return heat_im
 
 

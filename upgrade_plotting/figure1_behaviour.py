@@ -9,7 +9,7 @@ import numpy as np
 import seaborn as sns
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from utils.behavioural_utils.upgrade_fig1_utils import prep_data_for_learning_curve, discrimination_final_session, last_session_discrimination_plot, get_stimulus_examples, plot_spectrograms
-from utils.plotting_visuals import makes_plots_pretty, get_continuous_cmap
+from utils.plotting_visuals import makes_plots_pretty
 
 # Makes figure 1 for upgrade
 data_set = 'tail_and_acc_animals_new'  # This dataset has been pre-processed, but conditions have not been selected
@@ -78,6 +78,6 @@ learning_curves_ax.set_yticks([0, 20, 40, 60, 80, 100])
 # raw_data_ax.xaxis.set_label_text("")
 # raw_data_ax.set_yticks([0, 20, 40, 60, 80, 100])
 # raw_data_ax.set_xticklabels([])
-
-#plt.savefig(data_directory + 'Performance_by_session_individual_animals.pdf', transparent=True, bbox_inches='tight')
+data_directory = 'W:\\upgrade\\'
+plt.savefig(data_directory + 'Fig1_no_diagram.pdf', transparent=True, bbox_inches='tight')
 plt.show()
