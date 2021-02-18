@@ -67,22 +67,34 @@ def get_next_reward_time(trial_data, events_of_int):
 def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sort=False, get_photometry_data=True):
     response_names = ['both left and right', 'left', 'right']
     outcome_names = ['incorrect', 'correct', 'both correct and incorrect']
-    events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
-    if params.state == 10 or params.state == 12 or params.state == 13: # omissions, large rewards left and right
+
+    if params.state == 10 or params.state == 12 or params.state == 13:  # omissions, large rewards left and right
         if params.state == 10:
             omission_events = trial_data.loc[(trial_data['State type'] == params.state)]
         else:
             left_large_reward_events = trial_data.loc[(trial_data['State type'] == 12)]
-            right_large_reward_events =  trial_data.loc[(trial_data['State type'] == 13)]
+            right_large_reward_events = trial_data.loc[(trial_data['State type'] == 13)]
             omission_events = pd.concat([left_large_reward_events, right_large_reward_events])
 
         trials_of_int = omission_events['Trial num'].values
         omission_trials_all_states = trial_data.loc[(trial_data['Trial num'].isin(trials_of_int))]
-        events_of_int = omission_trials_all_states.loc[(omission_trials_all_states['State type'] == 5)] # get the action aligned trace
+        events_of_int = omission_trials_all_states.loc[
+            (omission_trials_all_states['State type'] == 5)]  # get the action aligned trace
+    elif params.state == 5.5:
+        events_of_int = trial_data.loc[
+            np.logical_or((trial_data['State type'] == 5.5), (trial_data['State type'] == 5))]
     else:
         events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
+
     if params.response != 0:
-        events_of_int = events_of_int.loc[events_of_int['Response'] == params.response]
+        if params.state == 5.5:
+            correct_choices = np.logical_and(events_of_int['Response'] == params.response,
+                                             events_of_int['State type'] == 5)
+            incorrect_first_choices = np.logical_and(events_of_int['First response'] == params.response,
+                                                     events_of_int['State type'] == 5.5)
+            events_of_int = events_of_int.loc[np.logical_or(correct_choices, incorrect_first_choices)]
+        else:
+            events_of_int = events_of_int.loc[events_of_int['Response'] == params.response]
     print(events_of_int.shape)
     if params.first_choice != 0:
         events_of_int = events_of_int.loc[events_of_int['First response'] == params.first_choice]
@@ -119,11 +131,15 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         events_of_int = events_of_int.loc[
             (events_of_int['First choice correct'] == 1)]
     elif params.first_choice_correct == -1:
-        events_of_int = events_of_int.loc[
-            (events_of_int['First choice correct'] == 0)]
+        events_of_int = events_of_int.loc[np.logical_or(
+            (events_of_int['First choice correct'] == 0), (events_of_int['First choice correct'].isnull()))]
+        if events_of_int['State type'].isin([5.5]).any():
+            events_of_int = events_of_int.loc[events_of_int['First choice correct'].isnull()]
 
     event_times = events_of_int[params.align_to].values
     trial_nums = events_of_int['Trial num'].values
+    trial_starts = events_of_int['Trial start'].values
+    trial_ends = events_of_int['Trial end'].values
     if params.state == 12 or params.state == 13:
         state_name = 'LargeReward'
     else:
@@ -171,7 +187,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         else:
             sorted_other_event = other_event
             sorted_next_poke = next_centre_poke_norm
-        return sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times
+        return sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times, trial_starts, trial_ends
 
 
 
@@ -295,7 +311,7 @@ class ZScoredTraces(object):
 class BehaviouralEvents(object):
     def __init__(self,  trial_data, dff, params, response, first_choice):
         self.params = HeatMapParams(params, response, first_choice)
-        self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times = find_and_z_score_traces(
+        self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times, self.trial_starts, self.trial_ends = find_and_z_score_traces(
             trial_data, dff, self.params, sort=False,  get_photometry_data=False)
 
 
@@ -347,7 +363,7 @@ class ChoiceAlignedEvents(object):
             'no_repeats' : 1,
             'last_response': 0,
             'align_to' : 'Time start',
-            'instance': -1,
+            'instance': 1,#used to be -1 but now better to not allow repeats
             'plot_range': [-6, 6],
             'first_choice_correct': 0,
             'cue': None}
@@ -485,8 +501,6 @@ class RewardAlignedData(object):
         self.contra_data = ZScoredTraces(trial_data, dff,params, contra_fiber_side_numeric, contra_fiber_side_numeric)
 
 
-
-
 class RewardAlignedEvents(object):
     def __init__(self, session_data):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
@@ -495,23 +509,28 @@ class RewardAlignedEvents(object):
         dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
         dff = np.load(saving_folder + dff_trace_filename)
 
-        fiber_options = np.array(['left', 'right'])
-        fiber_side_numeric = (np.where(fiber_options == session_data.fiber_side)[0] + 1)[0]
-        contra_fiber_side_numeric = (np.where(fiber_options != session_data.fiber_side)[0] + 1)[0]
-
+        params = {'state_type_of_interest': 5.5, #5.5
+                  'outcome': 2,
+                  'last_outcome': 0,  # NOT USED CURRENTLY
+                  'no_repeats': 0,
+                  'last_response': 0,
+                  'align_to': 'Time end',
+                  'instance': -1,
+                  'plot_range': [-6, 6],
+                  'first_choice_correct': -1,
+                  'cue': 'None'}
+        self.no_reward_data = BehaviouralEvents(trial_data, dff, params, 0, 0)
         params = {'state_type_of_interest': 5,
-            'outcome': 1,
-            'last_outcome': 0,  # NOT USED CURRENTLY
-            'no_repeats' : 0,
-            'last_response': 0,
-            'align_to' : 'Time end',
-            'instance': -1,
-            'plot_range': [-6, 6],
-            'first_choice_correct': 1,
-            'cue': None}
-
-        self.ipsi_data = BehaviouralEvents(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
-        self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+                  'outcome': 1,
+                  'last_outcome': 0,  # NOT USED CURRENTLY
+                  'no_repeats': 0,
+                  'last_response': 0,
+                  'align_to': 'Time end',
+                  'instance': -1,
+                  'plot_range': [-6, 6],
+                  'first_choice_correct': 1,
+                  'cue': 'None'}
+        self.reward_data = BehaviouralEvents(trial_data, dff, params, 0, 0)
 
 
 class RewardAndNoRewardAlignedData(object):
