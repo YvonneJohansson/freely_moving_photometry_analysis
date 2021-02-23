@@ -95,7 +95,6 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
             events_of_int = events_of_int.loc[np.logical_or(correct_choices, incorrect_first_choices)]
         else:
             events_of_int = events_of_int.loc[events_of_int['Response'] == params.response]
-    print(events_of_int.shape)
     if params.first_choice != 0:
         events_of_int = events_of_int.loc[events_of_int['First response'] == params.first_choice]
     if params.last_response != 0:
@@ -155,7 +154,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     last_trial_event_indx = events_reset_indx.loc[(events_reset_indx['Trial num'] == last_trial_num)].index
     next_centre_poke[last_trial_event_indx] = events_reset_indx[params.align_to].values[last_trial_event_indx]
     next_centre_poke_norm = next_centre_poke - event_times
-
+    print(events_of_int.shape)
     # this all deals with getting photometry data
     if get_photometry_data == True:
         event_photo_traces = get_photometry_around_event(event_times, demod_signal, pre_window=norm_window,

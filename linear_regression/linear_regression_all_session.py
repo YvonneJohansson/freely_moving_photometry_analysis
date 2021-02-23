@@ -2,15 +2,7 @@ import sys
 sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos\\Python_git')
 sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 
-import numpy as np
-from sklearn.linear_model import LinearRegression
-from scipy.ndimage.interpolation import shift
-from scipy.signal import decimate
-from matplotlib import pyplot as plt
-from scipy import stats
-import pandas as pd
-import pickle
-from utils.linear_regression_utils import *
+from utils.regression.linear_regression_utils import *
 import gc
 from linear_regression.get_time_stamps_for_regression import remove_manipulation_days
 mouse_ids = ['SNL_photo26']

@@ -31,7 +31,7 @@ def add_timestamps_to_aligned_data(experiments_to_add):
         session_events.get_choice_events()
         session_events.get_cue_events()
         session_events.get_reward_events()
-        aligned_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'behavioural_events_with_no_rewards_added.py' #'behavioural_events_no_repeated_cues.p'
+        aligned_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'behavioural_events_with_no_rewards_added.p' #'behavioural_events_no_repeated_cues.p'
         save_filename = saving_folder + aligned_filename
         pickle.dump(session_events, open(save_filename, "wb"))
 
@@ -46,9 +46,9 @@ def remove_manipulation_days(experiments):
 
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo16', 'SNL_photo17', 'SNL_photo18', 'SNL_photo21', 'SNL_photo22', 'SNL_photo26']#['SNL_photo28', 'SNL_photo31'] #['SNL_photo29', 'SNL_photo30', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+    mouse_ids = ['SNL_photo18']#['SNL_photo28', 'SNL_photo31'] #['SNL_photo29', 'SNL_photo30', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
     for mouse_id in mouse_ids:
-        date = 'all'
+        date = '20200223'
         all_experiments = get_all_experimental_records()
         clean_experiments = remove_exps_after_manipulations(all_experiments, [mouse_id])
         site = 'tail'
