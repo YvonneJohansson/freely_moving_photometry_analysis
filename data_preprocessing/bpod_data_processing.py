@@ -266,3 +266,29 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
             event_data = pd.DataFrame(event_info)
             restructured_data = pd.concat([restructured_data, event_data], ignore_index=True)
     return restructured_data
+
+
+def get_poke_times(loaded_bpod_file, trial_start_ttls_daq, clock_pulses):
+    original_state_data_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateData']
+    original_state_timestamps_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateTimestamps']
+    original_raw_events = loaded_bpod_file['SessionData']['RawEvents']['Trial']
+
+    daq_trials_start_ttls = trial_start_ttls_daq
+    all_port1_pokes_in = np.array([])
+    all_port2_pokes_out = np.array([])
+    all_port3_pokes_in = np.array([])
+    # loops through all the trials and pulls out all the states
+    for trial, state_timestamps in enumerate(original_state_timestamps_all_trials):
+        trial_start = daq_trials_start_ttls[trial]
+        if 'Port1In' in original_raw_events[trial]['Events']:
+            port1_pokes_in = np.squeeze(np.asarray([original_raw_events[trial]['Events']['Port1In']])) + trial_start
+            all_port1_pokes_in = np.append(all_port1_pokes_in, port1_pokes_in)
+        if 'Port3In' in original_raw_events[trial]['Events']:
+            port3_pokes_in = np.squeeze(np.asarray([original_raw_events[trial]['Events']['Port3In']])) + trial_start
+            all_port3_pokes_in = np.append(all_port3_pokes_in, port3_pokes_in)
+        if 'Port2Out' in original_raw_events[trial]['Events']:
+            port2_pokes_out = np.squeeze(np.asarray([original_raw_events[trial]['Events']['Port2Out']])) + trial_start
+            all_port2_pokes_out = np.append(all_port2_pokes_out, port2_pokes_out)
+
+    return all_port1_pokes_in, all_port2_pokes_out, all_port3_pokes_in
+
