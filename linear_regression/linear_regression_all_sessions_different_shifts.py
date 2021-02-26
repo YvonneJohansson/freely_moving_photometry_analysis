@@ -5,8 +5,8 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 from utils.regression.linear_regression_utils import *
 import gc
 from utils.post_processing_utils import remove_exps_after_manipulations, remove_bad_recordings
-mouse_ids = ['SNL_photo28', 'SNL_photo29', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
-site = 'Nacc'
+mouse_ids = ['SNL_photo16', 'SNL_photo17', 'SNL_photo18', 'SNL_photo21', 'SNL_photo22', 'SNL_photo26']
+site = 'tail'
 
 experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
 experiment_record['date'] = experiment_record['date'].astype(str)
@@ -85,14 +85,12 @@ for index, experiment in experiments_to_process.iterrows():
     for param in parameters:
         param_new = np.take(param, sorted(set(ind) - set(rm)))
         params_for_reg.append(param_new)
-
-    all_param_indices, X = make_design_matrix(params_for_reg, window_min=window_min, window_max=window_max)
+    param_names = ['high cues', 'low cues', 'ipsi choices', 'contra choices', 'rewards', 'no rewards']
+    shifts, windows = make_shifts_for_params(param_names)
+    param_inds, X = make_design_matrix_different_shifts(params_for_reg, shifts, windows)
     results = LinearRegression().fit(X, trace_for_reg)
     print(results.score(X, trace_for_reg))
-    param_names = ['high cues', 'low cues', 'ipsi choices', 'contra choices', 'rewards', 'no rewards']
-
-    shifts = np.arange(window_min, window_max + 1) / 100
 
     save_filename = mouse + '_' + date + '_'
-    save_kernels(saving_folder + save_filename, param_names, results, trace_for_reg, X.astype(int), window_min=window_min, window_max=window_max)
+    save_kernels_different_shifts(saving_folder + save_filename, param_names, results, trace_for_reg, X.astype(int), shifts, windows)
     gc.collect()
