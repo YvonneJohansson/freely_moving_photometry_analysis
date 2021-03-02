@@ -39,8 +39,11 @@ def get_photometry_around_event(all_trial_event_times, demodulated_trace, pre_wi
     return event_photo_traces
 
 
-def get_next_centre_poke(trial_data, events_of_int):
-    trial_numbers = events_of_int['Trial num'].unique()[:-1]
+def get_next_centre_poke(trial_data, events_of_int, last_trial):
+    if last_trial:
+        trial_numbers = events_of_int['Trial num'].unique()[:-1]
+    else:
+        trial_numbers = events_of_int['Trial num'].unique()
     next_centre_poke_times = np.zeros(events_of_int.shape[0])
     events_of_int = events_of_int.reset_index(drop=True)
     for event_trial_num in trial_numbers:
@@ -49,7 +52,22 @@ def get_next_centre_poke(trial_data, events_of_int):
         next_trial_events = trial_data.loc[(trial_data['Trial num'] == trial_num + 1)]
         wait_for_pokes = next_trial_events.loc[(next_trial_events['State type'] == 2)]
         next_wait_for_poke = wait_for_pokes.loc[(wait_for_pokes['Instance in state'] == 1)]
-        next_centre_poke_times[event_indx_for_that_trial] = next_wait_for_poke['Time end'].values[0]
+        next_centre_poke_times[event_indx_for_that_trial] = next_wait_for_poke['Time end'].values[0]-1
+    if last_trial:
+        next_centre_poke_times[-1] = events_of_int['Trial end'].values[-1] + 2
+    return next_centre_poke_times
+
+def get_first_poke(trial_data, events_of_int):
+    trial_numbers = events_of_int['Trial num'].unique()
+    next_centre_poke_times = np.zeros(events_of_int.shape[0])
+    events_of_int = events_of_int.reset_index(drop=True)
+    for event_trial_num in trial_numbers:
+        trial_num = event_trial_num
+        event_indx_for_that_trial = events_of_int.loc[(events_of_int['Trial num'] == trial_num)].index
+        trial_events = trial_data.loc[(trial_data['Trial num'] == trial_num)]
+        wait_for_pokes = trial_events.loc[(trial_events['State type'] == 2)]
+        next_wait_for_poke = wait_for_pokes.loc[(wait_for_pokes['Instance in state'] == 1)]
+        next_centre_poke_times[event_indx_for_that_trial] = next_wait_for_poke['Time end'].values[0]-1
     return next_centre_poke_times
 
 def get_next_reward_time(trial_data, events_of_int):
@@ -137,7 +155,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
 
     event_times = events_of_int[params.align_to].values
     trial_nums = events_of_int['Trial num'].values
-    trial_starts = events_of_int['Trial start'].values
+    #trial_starts = events_of_int['Trial start'].values
     trial_ends = events_of_int['Trial end'].values
     if params.state == 12 or params.state == 13:
         state_name = 'LargeReward'
@@ -145,18 +163,21 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         state_name = events_of_int['State name'].values[0]
     other_event = np.asarray(
         np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
-    next_centre_poke = get_next_centre_poke(trial_data, events_of_int)
-    outcome_times = get_next_reward_time(trial_data, events_of_int)
-    outcome_times = outcome_times - event_times
-
+    last_trial = np.max(trial_data['Trial num'])
     last_trial_num = events_of_int['Trial num'].unique()[-1]
     events_reset_indx = events_of_int.reset_index(drop=True)
     last_trial_event_indx = events_reset_indx.loc[(events_reset_indx['Trial num'] == last_trial_num)].index
-    next_centre_poke[last_trial_event_indx] = events_reset_indx[params.align_to].values[last_trial_event_indx]
-    next_centre_poke_norm = next_centre_poke - event_times
+    next_centre_poke = get_next_centre_poke(trial_data, events_of_int, last_trial_num==last_trial)
+    trial_starts = get_first_poke(trial_data, events_of_int)
+    outcome_times = get_next_reward_time(trial_data, events_of_int)
+    outcome_times = outcome_times - event_times
+
     print(events_of_int.shape)
     # this all deals with getting photometry data
     if get_photometry_data == True:
+        next_centre_poke[last_trial_event_indx] = events_reset_indx[params.align_to].values[last_trial_event_indx]
+        next_centre_poke_norm = next_centre_poke - event_times
+
         event_photo_traces = get_photometry_around_event(event_times, demod_signal, pre_window=norm_window,
                                                          post_window=norm_window)
         norm_traces = stats.zscore(event_photo_traces.T, axis=0)
@@ -182,10 +203,10 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         if sort:
             arr1inds = other_event.argsort()
             sorted_other_event = other_event[arr1inds[::-1]]
-            sorted_next_poke = next_centre_poke_norm[arr1inds[::-1]]
+            sorted_next_poke = next_centre_poke[arr1inds[::-1]]
         else:
             sorted_other_event = other_event
-            sorted_next_poke = next_centre_poke_norm
+            sorted_next_poke = next_centre_poke
         return sorted_other_event, state_name, title, sorted_next_poke, trial_nums, event_times, trial_starts, trial_ends
 
 
