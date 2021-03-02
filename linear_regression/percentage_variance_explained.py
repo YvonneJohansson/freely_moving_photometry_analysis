@@ -61,7 +61,7 @@ for index, experiment in experiments_to_process.iterrows():
     reward_pred, prop_due_to_outcome = remove_param_and_calculate_r2(param_names, params_to_remove, coefs, X,
                                                                 intercept, y, all_shifts, all_windows)
     print('outcome: ', prop_due_to_outcome)
-    full_model = explained_variance_score(y, np.dot(X, coefs))*100
+    full_model = explained_variance_score(y, np.dot(X, coefs) + intercept)*100
     print('full model: ', full_model)
     model_total.append(full_model)
     choice.append(prop_due_to_choice)
