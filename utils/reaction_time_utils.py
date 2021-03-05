@@ -8,6 +8,7 @@ import math
 import pandas as pd
 import scipy as scipy
 from scipy import optimize
+import os
 
 
 def plot_reaction_times(mouse, dates):
@@ -49,6 +50,7 @@ def plot_reaction_times_overlayed(mouse, dates):
 def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail', side='contra'):
     session_starts = get_bpod_trial_nums_per_session(mouse, dates)
     saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
+    data_root = r'W:\photometry_2AC\processed_data\peak_analysis'
     all_peaks = []
     all_bins = []
     all_reaction_times =[]
@@ -57,11 +59,14 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
     # if I can get the trial numbers ever that things belong to, then we are in business
     for date_num, date in enumerate(dates):
         print(date)
-        aligned_filename = saving_folder +  mouse + '_' + date + '_' + 'aligned_traces.p'
+        peaks_saving_folder = os.path.join(data_root, mouse)
+        #aligned_filename = saving_folder +  mouse + '_' + date + '_' + 'aligned_traces.p'
+        filename = mouse + '_' + date + '_' + 'peaks.p'
+        aligned_filename = os.path.join(peaks_saving_folder, filename)
         #mean_and_sem_filename = saving_folder + mouse + '_' + date + '_' + 'peaks_' + type_of_session + '_data.p'
         with open(aligned_filename, 'rb') as f:
             data = pickle.load(f)
-        if recording_site == 'tail':
+        #if recording_site == 'tail':
             recording_site_data = data.choice_data.contra_data
             actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
             all_actual_trial_numbers.append(actual_trial_numbers)
@@ -70,7 +75,25 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
             all_peaks.append(data.choice_data.contra_data.trial_peaks)
             all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
                                       stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
-        elif recording_site == 'Nacc':
+        if recording_site == 'Nacc' or recording_site == 'tail':
+            if side == 'high':
+                recording_site_data = data.cue_data.high_cue_data
+                actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
+                all_actual_trial_numbers.append(actual_trial_numbers)
+                all_trial_numbers.append(len(recording_site_data.reaction_times))
+                all_reaction_times.append(recording_site_data.reaction_times)
+                all_peaks.append(recording_site_data.trial_peaks)
+                all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
+                                          stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
+            if side == 'low':
+                recording_site_data = data.cue_data.low_cue_data
+                actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
+                all_actual_trial_numbers.append(actual_trial_numbers)
+                all_trial_numbers.append(len(recording_site_data.reaction_times))
+                all_reaction_times.append(recording_site_data.reaction_times)
+                all_peaks.append(recording_site_data.trial_peaks)
+                all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
+                                          stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
             if side == 'contra':
                 recording_site_data = data.cue_data.contra_data
                 actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
