@@ -10,7 +10,7 @@ import seaborn as sns
 font = {'size': 8}
 matplotlib.rc('font', **font)
 
-fig = plt.figure(constrained_layout=True, figsize=[7, 9])
+fig = plt.figure(constrained_layout=True, figsize=[8, 9])
 gs = fig.add_gridspec(nrows=9, ncols=4)
 
 
@@ -39,9 +39,9 @@ vs_heatmap_unrew_ax = fig.add_subplot(gs[4:6, 3])
 
 vs_average_contra_ax = fig.add_subplot(gs[6:7, 0])
 vs_average_contra_ax.set_title('E', loc='left', fontweight='bold')
-vs_average_ipsi_ax = fig.add_subplot(gs[6:7, 1], sharey= vs_average_contra_ax)
+vs_average_ipsi_ax = fig.add_subplot(gs[6:7, 1], sharey=vs_average_contra_ax)
 vs_average_rew_ax = fig.add_subplot(gs[6:7, 2])
-vs_average_unrew_ax = fig.add_subplot(gs[6:7, 3])
+vs_average_unrew_ax = fig.add_subplot(gs[6:7, 3], sharey=vs_average_rew_ax)
 
 ts_heat_map_axs = {'contra': [ts_heatmap_contra_ax],
                    'ipsi': [ts_heatmap_ipsi_ax],

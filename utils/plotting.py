@@ -233,7 +233,7 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range=None, error_bar_metho
         one_side_data.sorted_next_poke = one_side_data.sorted_next_poke[arr1inds[::-1]]
 
     heat_im = ax2.imshow(one_side_data.sorted_traces, aspect='auto',
-                            extent=[-10, 10, one_side_data.sorted_traces.shape[0], 0], cmap='jet')
+                            extent=[-10, 10, one_side_data.sorted_traces.shape[0], 0], cmap='viridis')
 
     ax2.axvline(0, color='w', linewidth=1)
     if white_dot == 'reward':

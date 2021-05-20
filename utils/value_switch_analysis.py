@@ -14,10 +14,10 @@ if not os.path.exists(processed_data_dir):
 all_experiments = get_all_experimental_records()
 #block_types = pd.DataFrame({'block type': [1, 2, 3, 4, 5], 'left reward': [6, 4, 2, 2, 2], 'right reward': [2, 2, 2, 4, 6]})
 block_types = pd.DataFrame({'block type': [0, 1, 5], 'left reward': [2, 6, 2], 'right reward': [2, 2, 6]})
-mice =['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35'] #['SNL_photo21', 'SNL_photo22', 'SNL_photo26'] for tail
+mice = ['SNL_photo37', 'SNL_photo43'] #['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
 #sessions = ['20210126', '20210127'] #['20200917', '20200918', '20200921'] for tail
 
-block_data_file = os.path.join(processed_data_dir, 'value_switch_nacc_mice.csv')
+block_data_file = os.path.join(processed_data_dir, 'value_switch_tail_mice.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)

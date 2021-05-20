@@ -11,12 +11,12 @@ import utils.cued_reward_utils as bpod
 from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
 
-mouse = 'SNL_photo18_rewards'
-date = '20200320'
-daq_file = bpod.find_daq_file(mouse, date, 'Cued_Reward')
+mouse = 'test_opto_mouse'
+daq_date = '20210520_16_57_27'
+daq_file = bpod.find_daq_file(mouse, daq_date)
 data = nptdms.TdmsFile(daq_file)
-
-main_session_file = bpod.find_bpod_file(mouse, date)
+bpod_date = '20210520_165741'
+main_session_file = bpod.find_bpod_file(mouse, bpod_date, 'Opto_stim_for_photometry')
 loaded_bpod_file, trial_raw_events = bpod.load_bpod_file(main_session_file)
 
 chan_0 = data.group_channels('acq_task')[0].data
@@ -35,10 +35,10 @@ if daq_num_trials != bpod_num_trials:
     print('bpod: ', bpod_num_trials)
 else:
     print(daq_num_trials, 'trials in session')
-
-signal, back = demodulate(chan_0, led465, led405)
-
 sampling_rate = 10000
+signal, back = demodulate(chan_0, led465, led405, sampling_rate)
+
+
 GCaMP_raw = signal[sampling_rate:]
 back_raw = back[sampling_rate:]
 
@@ -76,12 +76,12 @@ original_state_data_all_trials = loaded_bpod_file['SessionData']['RawData']['Ori
 original_state_timestamps_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateTimestamps']
 daq_trials_start_ttls = trial_start_ttls_daq
 
-restructured_data = bpod.restructure_bpod_timestamps_cued_reward(loaded_bpod_file, trial_start_ttls_daq)
+restructured_data = bpod.restructure_bpod_timestamps_opto_stim(loaded_bpod_file, trial_start_ttls_daq)
 
 saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
-demod_trace_filename = mouse + '_' + date + '_' + 'demod_signal.npy'
-smoothed_trace_filename = mouse + '_' + date + '_' + 'smoothed_signal.npy'
-restructured_data_filename = mouse + '_' + date + '_' + 'restructured_data.pkl'
+demod_trace_filename = mouse + '_' + daq_date + '_' + 'demod_signal.npy'
+smoothed_trace_filename = mouse + '_' + daq_date + '_' + 'smoothed_signal.npy'
+restructured_data_filename = mouse + '_' + daq_date + '_' + 'restructured_data.pkl'
 np.save(saving_folder + demod_trace_filename, GCaMP_dF_F)
 np.save(saving_folder + smoothed_trace_filename, smoothed_GCaMP)
 restructured_data.to_pickle(saving_folder + restructured_data_filename)

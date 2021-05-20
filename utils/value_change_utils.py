@@ -118,7 +118,13 @@ def find_and_z_score_traces_blocks(trial_data, demod_signal, params, reward_bloc
     state_name = events_of_int['State name'].values[0]
     other_event = np.asarray(
         np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
-    next_centre_poke = get_next_centre_poke(trial_data, events_of_int)
+
+
+    last_trial = np.max(trial_data['Trial num'])
+    last_trial_num = events_of_int['Trial num'].unique()[-1]
+    events_reset_indx = events_of_int.reset_index(drop=True)
+    last_trial_event_indx = events_reset_indx.loc[(events_reset_indx['Trial num'] == last_trial_num)].index
+    next_centre_poke = get_next_centre_poke(trial_data, events_of_int, last_trial_num==last_trial)
     outcome_times = get_next_reward_time(trial_data, events_of_int)
     outcome_times = outcome_times - event_times
 
@@ -309,7 +315,7 @@ def plot_mean_trace_for_condition(ax, block_change_info, time_points, key, error
     #lg.get_title().set_fontsize(14)
 
 
-def plot_mean_trace_for_condition_value_switch(ax, block_change_info, time_points, key, session_id, error_bar_method=None, save_location=None):
+def plot_mean_trace_for_condition_value_switch(ax, block_change_info, time_points, key, session_id, possible_values, error_bar_method=None, save_location=None):
     mouse = block_change_info['mouse'].iloc[0]
     if key == 'contra reward amount':
         condition = 'abs'
@@ -321,7 +327,7 @@ def plot_mean_trace_for_condition_value_switch(ax, block_change_info, time_point
         raise ValueError('Condition not recognised')
 
     reward_amounts = np.sort(block_change_info[key].unique())
-    colours = cm.inferno(np.linspace(0, 0.8, reward_amounts.shape[0]))
+    colours = cm.inferno(np.linspace(0, 0.8, np.shape(possible_values)[0]))
     time_points = decimate(time_points, 10)
     for reward_indx, reward_amount in enumerate(reward_amounts):
         rows = block_change_info[(block_change_info[key] == reward_amount)]
@@ -330,7 +336,9 @@ def plot_mean_trace_for_condition_value_switch(ax, block_change_info, time_point
         for idx, trace in enumerate(traces):
             flat_traces[idx, :] = trace
         mean_trace = decimate(np.mean(flat_traces, axis=0), 10)
-        ax.plot(time_points, mean_trace, lw=1.5, color=colours[reward_indx], label=reward_amount)
+        colour_ind = np.where(possible_values == reward_amount)[0][0]
+        print(colours[colour_ind])
+        ax.plot(time_points, mean_trace, lw=1.5, color=colours[colour_ind], label=reward_amount)
         if error_bar_method is not None:
             # bootstrapping takes a long time. calculate once and save:
             filename = 'errors_{}_{}_{}_{}_{}.npz'.format(mouse, condition, int(reward_amount), 'value_switch', session_id)
@@ -345,7 +353,7 @@ def plot_mean_trace_for_condition_value_switch(ax, block_change_info, time_point
                 error_bar_lower = error_info['error_bar_lower']
                 error_bar_upper = error_info['error_bar_upper']
             ax.fill_between(time_points, error_bar_lower, error_bar_upper, alpha=0.5,
-                            facecolor=colours[reward_indx], linewidth=0)
+                            facecolor=colours[colour_ind], linewidth=0)
 
     ax.axvline(0, color='k')
     ax.set_xlim([-2, 2])

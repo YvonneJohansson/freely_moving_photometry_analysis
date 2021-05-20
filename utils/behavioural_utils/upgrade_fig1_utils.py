@@ -10,20 +10,7 @@ from utils.post_processing_utils import get_all_experimental_records, remove_man
 import matplotlib.pyplot as plt
 import seaborn as sns
 import bpod_open_ephys_analysis.utils.load_nested_structs as load_ns
-
-
-def find_manipulation_days(experiment_records, mice):
-    experiments = experiment_records[experiment_records['mouse_id'].isin(mice)]
-    exemption_list = ['psychometric', 'state change medium cloud', 'value blocks', 'state change white noise',
-                      'omissions and large rewards', 'contingency switch', 'ph3', 'saturation']
-    exemptions = '|'.join(exemption_list)
-    index_to_remove = experiments[np.logical_xor(experiments['include'] == 'no',
-                                                 experiments['experiment_notes'].str.contains(exemptions,
-                                                                                              na=False))].index
-    mouse_dates = experiments.loc[index_to_remove][['mouse_id', 'date']].reset_index(drop=True)
-    reformatted_dates = pd.to_datetime(mouse_dates['date'])
-    mouse_dates['date'] = reformatted_dates
-    return mouse_dates
+from utils.post_processing_utils import find_manipulation_days
 
 
 def remove_manipulation_days(df_to_plot, manipulation_days):
@@ -120,9 +107,9 @@ def get_stimulus_examples(file):
 
 def plot_spectrograms(low_cloud, low_ax, high_cloud, high_ax):
     my_cmap = sns.light_palette('gray', as_cmap=True)
-
-    high_ax.specgram(x=high_cloud, Fs=96000, NFFT=256, noverlap=250, cmap=my_cmap)
-    low_ax.specgram(x=low_cloud, Fs=96000, NFFT=256, noverlap=250, cmap=my_cmap)
+    #1000, 800, 2000, 192000
+    high_ax.specgram(x=high_cloud, Fs=192000, NFFT=1000, noverlap=800, cmap=my_cmap)
+    low_ax.specgram(x=low_cloud, Fs=192000, NFFT=1000, noverlap=800, cmap=my_cmap)
     low_ax.set_ylabel('Frequency (kHz)')
     low_ax.set_xlabel('Time (s)')
     high_ax.set_xlabel('Time (s)')
@@ -131,7 +118,7 @@ def plot_spectrograms(low_cloud, low_ax, high_cloud, high_ax):
     ticks = matplotlib.ticker.FuncFormatter(lambda y, pos: '{0:g}'.format(y * 0.001))
     low_ax.yaxis.set_major_formatter(ticks)
     high_ax.set_yticklabels([])
-    high_ax.set_ylim([0, 30000])
+    high_ax.set_ylim([0, 40000])
     high_ax.set_xlim([0, 0.3])
 
 

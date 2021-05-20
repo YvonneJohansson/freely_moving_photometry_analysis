@@ -9,6 +9,9 @@ import scipy as scipy
 from scipy import optimize
 from utils.mean_trace_utils import mouseDates
 from utils.reaction_time_utils import get_valid_trials
+from utils.post_processing_utils import remove_exps_after_manipulations, remove_bad_recordings
+from data_preprocessing.session_traces_and_mean import get_all_experimental_records
+import seaborn as sns
 
 def plot_all_valid_trials_over_time(session_starts, valid_peaks, valid_trial_nums):
     num_sessions = len(session_starts)
@@ -64,7 +67,7 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
         x_vals.append(np.mean(valid_trial_nums[window_num * window_size: (window_num + 1) * window_size]))
     norm_rolling_mean_peak = np.array(rolling_mean_peak)/ 1.0 # np.max(rolling_mean_peak)
 
-    if fit_line != 'None':
+    if fit_line:
         popt_exponential, pcov_exponential = scipy.optimize.curve_fit(fit_equation, np.array(x_vals), np.array(norm_rolling_mean_peak), p0=starting_params)
         perr_exponential = np.sqrt(np.diag(pcov_exponential))
 
@@ -91,33 +94,43 @@ def plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=50, fit_
     if plotting:
         fig, ax = plt.subplots(1, ncols=1, figsize=(4, 3))
         fig.subplots_adjust(hspace=0.5, wspace=0.2)
-        ax.scatter(x_vals, norm_rolling_mean_peak, color='#3F888F', s=8)
-        if fit_line != 'None':
+        ax.plot(x_vals, norm_rolling_mean_peak, color='#3F888F')
+        if fit_line:
             ax.plot(x_vals_fit, y_vals_fit, color='grey')
         ax.set_xlabel('trial number(binned in groups of ' + str(window_size)+')', size=13)
         #ax.set_xlim([0,17000])
         ax.set_ylabel('z-scored peak', size=13)
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
     return(x_vals, norm_rolling_mean_peak, x_vals_fit, y_vals_fit)
 
-def multi_animal_scatter_and_fit(mice_dates, window_size=30, fit_type='exponential decay'):
+def multi_animal_scatter_and_fit(mice, recording_site='tail', window_size=30, fit_type='exponential decay'):
     fig, ax = plt.subplots(1, ncols=1, figsize=(10, 8))
     fig.subplots_adjust(hspace=0.5, wspace=0.2)
-    num_types = len(mice_dates)
-    colours = cm.viridis(np.linspace(0, 0.8, num_types))
-    for mouse_num, mouse_dates in enumerate(mice_dates):
-        mouse = mouse_dates.mouse
-        dates = mouse_dates.dates
+    num_types = len(mice)
+    colours = sns.color_palette("pastel") #cm.viridis(np.linspace(0, 0.8, num_types))
+    for mouse_num, mouse in enumerate(mice):
+        dates = get_dates_for_mouse(mouse, recording_site=recording_site)
         session_starts, valid_trials, valid_reaction_times, valid_peaks, valid_trial_nums = get_valid_trials(mouse,
                                                                                                              dates,
                                                                                                              window_around_mean=2)
         x_vals, norm_rolling_mean_peak, x_vals_fit, y_vals_fit = plot_binned_valid_trials(valid_peaks, valid_trial_nums, window_size=window_size, fit_line=fit_type, plotting=False)
-        ax.scatter(x_vals, norm_rolling_mean_peak, color=colours[mouse_num], label=mouse)
-        if fit_type != 'None':
+        ax.plot(x_vals, norm_rolling_mean_peak, color=colours[mouse_num], label=mouse)
+        if fit_type:
             ax.plot(x_vals_fit, y_vals_fit, color=colours[mouse_num])
     ax.set_xlabel('trial number (trials binned in groups of ' + str(window_size)+')')
     #ax.set_xlim([0,15000])
     ax.set_ylabel('z-scored peak')
     ax.legend(loc='best')
     plt.show()
+
+
+
+def get_dates_for_mouse(mouse, recording_site='tail'):
+    all_experiments = get_all_experimental_records()
+    all_experiments = remove_exps_after_manipulations(all_experiments, [mouse])
+    all_experiments = remove_bad_recordings(all_experiments)
+    experiments_to_process = all_experiments[
+        (all_experiments['mouse_id'] == mouse) & (all_experiments['recording_site'] == recording_site)]
+    dates = experiments_to_process['date'].values
+    return dates

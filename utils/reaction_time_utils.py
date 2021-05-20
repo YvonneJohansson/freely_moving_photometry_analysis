@@ -66,7 +66,7 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
         #mean_and_sem_filename = saving_folder + mouse + '_' + date + '_' + 'peaks_' + type_of_session + '_data.p'
         with open(aligned_filename, 'rb') as f:
             data = pickle.load(f)
-        #if recording_site == 'tail':
+        if recording_site == 'tail':
             recording_site_data = data.choice_data.contra_data
             actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
             all_actual_trial_numbers.append(actual_trial_numbers)
@@ -75,7 +75,7 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
             all_peaks.append(data.choice_data.contra_data.trial_peaks)
             all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
                                       stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
-        if recording_site == 'Nacc' or recording_site == 'tail':
+        if recording_site == 'Nacc':
             if side == 'high':
                 recording_site_data = data.cue_data.high_cue_data
                 actual_trial_numbers = recording_site_data.trial_nums + session_starts[date_num]
@@ -100,7 +100,7 @@ def get_valid_trials(mouse, dates, window_around_mean=0.2, recording_site='tail'
                 all_actual_trial_numbers.append(actual_trial_numbers)
                 all_trial_numbers.append(len(recording_site_data.reaction_times))
                 all_reaction_times.append(recording_site_data.reaction_times)
-                all_peaks.append(data.cue_data.contra_data.trial_peaks)
+                all_peaks.append(recording_site_data.trial_peaks)
                 all_bins.append(np.arange(start=min(recording_site_data.reaction_times),
                                           stop=max(recording_site_data.reaction_times) + 0.1, step=0.1))
 

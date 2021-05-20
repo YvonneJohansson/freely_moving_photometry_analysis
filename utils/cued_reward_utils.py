@@ -7,9 +7,9 @@ import bpod_open_ephys_analysis.utils.load_nested_structs as load_ns
 import numpy as np
 import pandas as pd
 
-def find_bpod_file(mouse, date):
-    Bpod_data_path = 'W:\\photometry_2AC\\bpod_data\\' + mouse + '\\Cued_Reward\\Session Data\\'
-    Bpod_file_search_tool = mouse + '_Cued_Reward_' + date
+def find_bpod_file(mouse, date, protocol):
+    Bpod_data_path = 'W:\\photometry_2AC\\bpod_data\\' + mouse + '\\{}\\Session Data\\'.format(protocol)
+    Bpod_file_search_tool = mouse + '_{}_'.format(protocol) + date
     files_in_bpod_path = os.listdir(Bpod_data_path)
     files_on_that_day = [s for s in files_in_bpod_path if Bpod_file_search_tool in s]
     mat_files_on_that_day = [s for s in files_on_that_day if '.mat' in s]
@@ -61,9 +61,7 @@ def load_bpod_file(main_session_file):
         trial_raw_events[trial_num] = load_ns._todict(trial)
 
     loaded_bpod_file['SessionData']['RawEvents']['Trial'] = trial_raw_events
-    trial_settings = loaded_bpod_file['SessionData']['TrialSettings']
     first_trial = trial_raw_events[0]
-    first_trial_TTL = first_trial['States']['TaskStart']
     return loaded_bpod_file, trial_raw_events
 
 
@@ -81,7 +79,8 @@ def find_num_times_in_state(trial_states):
                 max_occurences[idx] = total_occurences
     return state_occurences, max_occurences
 
-def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq):
+
+def restructure_bpod_timestamps_cue_reward(loaded_bpod_file, trial_start_ttls_daq):
     original_state_data_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateData']
     original_state_timestamps_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateTimestamps']
     daq_trials_start_ttls = trial_start_ttls_daq
@@ -145,4 +144,34 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq):
             if lick_times.size > 0:
                 event_data = pd.DataFrame(event_info)
                 restructured_data = pd.concat([restructured_data, event_data], ignore_index=True)
+    return restructured_data
+
+def restructure_bpod_timestamps_opto_stim(loaded_bpod_file, trial_start_ttls_daq):
+    original_state_data_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateData']
+    original_state_timestamps_all_trials = loaded_bpod_file['SessionData']['RawData']['OriginalStateTimestamps']
+    daq_trials_start_ttls = trial_start_ttls_daq
+    original_raw_events = loaded_bpod_file['SessionData']['RawEvents']['Trial']
+    # loops through all the trials and pulls out all the states
+    for trial, state_timestamps in enumerate(original_state_timestamps_all_trials):
+        state_info = {}
+        event_info = {}
+        trial_states = original_state_data_all_trials[trial]
+        num_states = (len(trial_states))
+        state_info['Trial num'] = np.ones((num_states)) * trial
+        state_info['State type'] = trial_states
+        num_times_in_state = find_num_times_in_state(trial_states)
+        state_info['Instance in state'] = num_times_in_state[0]
+        state_info['Max times in state'] = num_times_in_state[1]
+        state_info['State name'] = loaded_bpod_file['SessionData']['RawData']['OriginalStateNamesByNumber'][0][
+            trial_states - 1]
+        state_info['Time start'] = state_timestamps[0:-1] + daq_trials_start_ttls[trial]
+        state_info['Time end'] = state_timestamps[1:] + daq_trials_start_ttls[trial]
+
+        state_info['Trial start'] = np.ones((num_states)) * daq_trials_start_ttls[trial]
+        state_info['Trial end'] = np.ones((num_states)) * (state_timestamps[-1] + daq_trials_start_ttls[trial])
+        trial_data = pd.DataFrame(state_info)
+        if trial == 0:
+            restructured_data = trial_data
+        else:
+            restructured_data = pd.concat([restructured_data, trial_data], ignore_index=True)
     return restructured_data

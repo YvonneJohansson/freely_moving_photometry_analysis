@@ -30,6 +30,32 @@ def get_all_experimental_records():
     experiment_record['date'] = experiment_record['date'].astype(str)
     return experiment_record
 
+def find_manipulation_days(experiment_records, mice):
+    experiments = experiment_records[experiment_records['mouse_id'].isin(mice)]
+    exemption_list = ['psychometric', 'state change medium cloud', 'value blocks', 'state change white noise',
+                      'omissions and large rewards', 'contingency switch', 'ph3', 'saturation']
+    exemptions = '|'.join(exemption_list)
+    index_to_remove = experiments[experiments['experiment_notes'].str.contains(exemptions,na=False)].index
+    mouse_dates = experiments.loc[index_to_remove][['mouse_id', 'date']].reset_index(drop=True)
+    reformatted_dates = pd.to_datetime(mouse_dates['date'])
+    mouse_dates['date'] = reformatted_dates
+    return mouse_dates
+
+
+def remove_exps_after_manipulations(experiments, mice):
+    manipulation_days = find_manipulation_days(experiments, mice)
+    for mouse in manipulation_days['mouse_id'].unique():
+        all_manipulation_days = manipulation_days[manipulation_days['mouse_id'] == mouse]
+        earliest_manipulation_day = all_manipulation_days.min()
+
+        index_to_remove = experiments[np.logical_and((experiments['mouse_id'] == mouse),
+                                                     (pd.to_datetime(experiments['date']) >= earliest_manipulation_day['date']))].index
+        if index_to_remove.shape[0] > 0:
+            dates_being_removed = experiments['date'][index_to_remove].unique()
+            experiments = experiments.drop(index=index_to_remove)
+            print('removing {}: {}'.format(mouse, dates_being_removed))
+    return experiments
+
 
 def remove_manipulation_days(experiments):
     exemption_list = ['psychometric', 'state change medium cloud', 'value blocks', 'state change white noise', 'omissions and large rewards']
@@ -38,6 +64,12 @@ def remove_manipulation_days(experiments):
     cleaned_experiments = experiments.drop(index=index_to_remove)
     return cleaned_experiments
 
+
+def remove_bad_recordings(experiments):
+    index_to_remove = experiments[experiments['include'] == 'no'].index
+    cleaned_experiments = experiments.drop(index=index_to_remove)
+    print(index_to_remove)
+    return cleaned_experiments
 
 def open_experiment(experiment_to_add):
     for index, experiment in experiment_to_add.iterrows():

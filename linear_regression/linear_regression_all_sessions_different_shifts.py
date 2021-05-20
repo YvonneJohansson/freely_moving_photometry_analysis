@@ -5,8 +5,8 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 from utils.regression.linear_regression_utils import *
 import gc
 from utils.post_processing_utils import remove_exps_after_manipulations, remove_bad_recordings
-mouse_ids = ['SNL_photo16', 'SNL_photo17', 'SNL_photo18', 'SNL_photo21', 'SNL_photo22', 'SNL_photo26']
-site = 'tail'
+mouse_ids =  ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+site = 'Nacc'
 
 experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
 experiment_record['date'] = experiment_record['date'].astype(str)
@@ -92,5 +92,6 @@ for index, experiment in experiments_to_process.iterrows():
     print(results.score(X, trace_for_reg))
 
     save_filename = mouse + '_' + date + '_'
-    save_kernels_different_shifts(saving_folder + save_filename, param_names, results, trace_for_reg, X.astype(int), shifts, windows)
+
+    save_kernels_different_shifts(saving_folder + save_filename, param_names, params_for_reg, results, trace_for_reg, X.astype(int), shifts, windows)
     gc.collect()

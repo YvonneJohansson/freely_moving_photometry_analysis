@@ -10,3 +10,5 @@ sesstrace.prof
 data_preprocessing/__pycache__/
 linear_regression/__pycache__/
 test.py
+utils/regression/__pycache__/
+utils/zscored_plots/__pycache__/

@@ -22,7 +22,7 @@ def add_experiment_to_aligned_data(experiments_to_add):
 
 
 if __name__ == '__main__':
-    mouse_ids = ['SNL_photo21']
+    mouse_ids = ['SNL_photo22']
     site = 'tail'
     experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
     experiment_record['date'] = experiment_record['date'].astype(str)
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     all_experiments = clean_experiments[
         (clean_experiments['mouse_id'].isin(mouse_ids)) & (clean_experiments['recording_site'] == site)].reset_index(
         drop=True)
-    date = '20200828'
+    date = 'all'
     for mouse_id in mouse_ids:
         if (mouse_id =='all') & (date == 'all'):
             experiments_to_process = all_experiments

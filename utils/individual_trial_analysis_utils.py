@@ -35,26 +35,27 @@ def get_photometry_around_event(all_trial_event_times, demodulated_trace, pre_wi
         event_photo_traces[event_num, :] = demodulated_trace[plot_start:plot_end]
         #except:
         #   event_photo_traces = event_photo_traces[:event_num,:]
-    print(event_photo_traces.shape)
     return event_photo_traces
 
 
 def get_next_centre_poke(trial_data, events_of_int, last_trial):
-    if last_trial:
-        trial_numbers = events_of_int['Trial num'].unique()[:-1]
-    else:
-        trial_numbers = events_of_int['Trial num'].unique()
     next_centre_poke_times = np.zeros(events_of_int.shape[0])
     events_of_int = events_of_int.reset_index(drop=True)
-    for event_trial_num in trial_numbers:
-        trial_num = event_trial_num
-        event_indx_for_that_trial = events_of_int.loc[(events_of_int['Trial num'] == trial_num)].index
+    for i, event in events_of_int[:-1].iterrows():
+        trial_num = event['Trial num']
         next_trial_events = trial_data.loc[(trial_data['Trial num'] == trial_num + 1)]
         wait_for_pokes = next_trial_events.loc[(next_trial_events['State type'] == 2)]
         next_wait_for_poke = wait_for_pokes.loc[(wait_for_pokes['Instance in state'] == 1)]
-        next_centre_poke_times[event_indx_for_that_trial] = next_wait_for_poke['Time end'].values[0]-1
+        next_centre_poke_times[i] = next_wait_for_poke['Time end'].values[0]
     if last_trial:
         next_centre_poke_times[-1] = events_of_int['Trial end'].values[-1] + 2
+    else:
+        event = events_of_int.tail(1)
+        trial_num = event['Trial num'].values[0]
+        next_trial_events = trial_data.loc[(trial_data['Trial num'] == trial_num + 1)]
+        wait_for_pokes = next_trial_events.loc[(next_trial_events['State type'] == 2)]
+        next_wait_for_poke = wait_for_pokes.loc[(wait_for_pokes['Instance in state'] == 1)]
+        next_centre_poke_times[-1] = next_wait_for_poke['Time end'].values[0]
     return next_centre_poke_times
 
 def get_first_poke(trial_data, events_of_int):
@@ -101,6 +102,14 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     elif params.state == 5.5:
         events_of_int = trial_data.loc[
             np.logical_or((trial_data['State type'] == 5.5), (trial_data['State type'] == 5))]
+        trial_nums = events_of_int['Trial num'].unique()
+        for trial in trial_nums:
+            events = events_of_int[events_of_int['Trial num'] == trial]
+            if events.shape[0] > 1:
+                second_event = pd.to_numeric(events['Time end']).idxmax()
+                if events['State type'][second_event] == 5.5:
+                    events_of_int = events_of_int.drop(second_event)
+
     else:
         events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
 
@@ -153,16 +162,40 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
         if events_of_int['State type'].isin([5.5]).any():
             events_of_int = events_of_int.loc[events_of_int['First choice correct'].isnull()]
 
-    event_times = events_of_int[params.align_to].values
+    events_of_int_reset = events_of_int.reset_index(drop=True)
+    if events_of_int['State type'].isin([5.5]).any():
+        event_times = np.zeros(events_of_int_reset.shape[0])
+        for i, event in events_of_int_reset.iterrows():
+            if event['State type'] == 5.5:
+                align_to = 'Time start'
+                event_times[i] = event[align_to]
+            else:
+                event_times[i] = event[params.align_to]
+    else:
+        event_times = events_of_int[params.align_to].values
     trial_nums = events_of_int['Trial num'].values
     #trial_starts = events_of_int['Trial start'].values
     trial_ends = events_of_int['Trial end'].values
+
+    if params.state == 5.5:
+
+        other_event = np.zeros([events_of_int_reset.shape[0]])
+        for i, event in events_of_int_reset.iterrows():
+            if event['State type'] == 5.5:
+                trial_num = event['Trial num']
+                this_trial_data = trial_data[trial_data['Trial num'] == trial_num]
+                out_of_centre = this_trial_data[this_trial_data['State type'] == 4].tail(1)['Time end'].values[0]
+                other_event[i] = out_of_centre - np.squeeze(event[params.align_to])
+            else:
+                other_event[i] = np.squeeze(event[params.other_time_point]) - np.squeeze(event[params.align_to])
+    else:
+        other_event = np.asarray(
+            np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
     if params.state == 12 or params.state == 13:
         state_name = 'LargeReward'
     else:
         state_name = events_of_int['State name'].values[0]
-    other_event = np.asarray(
-        np.squeeze(events_of_int[params.other_time_point].values) - np.squeeze(events_of_int[params.align_to].values))
+
     last_trial = np.max(trial_data['Trial num'])
     last_trial_num = events_of_int['Trial num'].unique()[-1]
     events_reset_indx = events_of_int.reset_index(drop=True)
@@ -172,7 +205,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
     outcome_times = get_next_reward_time(trial_data, events_of_int)
     outcome_times = outcome_times - event_times
 
-    print(events_of_int.shape)
+    #print(events_of_int.shape)
     # this all deals with getting photometry data
     if get_photometry_data == True:
         next_centre_poke[last_trial_event_indx] = events_reset_indx[params.align_to].values[last_trial_event_indx]
@@ -229,6 +262,25 @@ def get_peak_each_trial(sorted_traces, time_points, sorted_other_events):
     #plt.show()
     return flat_peaks
 
+
+def get_peak_each_trial_no_nans(sorted_traces, time_points, sorted_other_events):
+    all_trials_peaks = []
+    for trial_num in range(0, len(sorted_other_events)):
+        indices_to_integrate = np.where(np.logical_and(np.greater_equal(time_points, 0), np.less_equal(time_points, sorted_other_events[trial_num])))
+        trial_trace = (sorted_traces[trial_num, indices_to_integrate]).T
+        trial_trace = trial_trace # - trial_trace[0]s
+        trial_peak_inds = peakutils.indexes(trial_trace.flatten('F'))
+        if trial_peak_inds.shape[0] > 0 or len(trial_peak_inds > 1):
+            trial_peak_inds = trial_peak_inds[0]
+            trial_peaks = trial_trace.flatten('F')[trial_peak_inds]
+        else:
+            trial_peak_inds = np.argmax(trial_trace)
+            trial_peaks = np.max(trial_trace)
+        all_trials_peaks.append(trial_peaks)
+    flat_peaks = all_trials_peaks
+    #plt.show()
+    return flat_peaks
+
 def get_peak_each_trial_psychometric(sorted_traces, time_points, sorted_other_events):
     all_trials_peaks = []
     #plt.figure()
@@ -278,17 +330,17 @@ class SessionData(object):
         self.reward_data = None
         self.outcome_data = None
 
-    def get_choice_responses(self):
-        self.choice_data = ChoiceAlignedData(self)
+    def get_choice_responses(self, save_traces=True):
+        self.choice_data = ChoiceAlignedData(self, save_traces=save_traces)
 
-    def get_cue_responses(self):
-        self.cue_data = CueAlignedData(self)
+    def get_cue_responses(self, save_traces=True):
+        self.cue_data = CueAlignedData(self, save_traces=save_traces)
 
-    def get_reward_responses(self):
-        self.reward_data = RewardAlignedData(self)
+    def get_reward_responses(self, save_traces=True):
+        self.reward_data = RewardAlignedData(self, save_traces=save_traces)
 
-    def get_outcome_responses(self):
-        self.outcome_data = RewardAndNoRewardAlignedData(self)
+    def get_outcome_responses(self, save_traces=True):
+        self.outcome_data = RewardAndNoRewardAlignedData(self, save_traces=save_traces)
 
 
 class SessionEvents(object):
@@ -324,8 +376,15 @@ class ZScoredTraces(object):
         self.time_points, self.mean_trace, self.sorted_traces, self.reaction_times, self.state_name, title, self.sorted_next_poke, self.trial_nums, self.event_times, self.outcome_times = find_and_z_score_traces(
             trial_data, dff, self.params, sort=False)
 
-    def get_peaks(self):
-        self.trial_peaks = get_peak_each_trial(self.sorted_traces, self.time_points, self.outcome_times)
+
+    def get_peaks(self, save_traces=True):
+        if self.params.align_to == 'Time start':
+            other_time_point = self.outcome_times
+        else: # for reward or non reward aligned data
+            other_time_point = self.sorted_next_poke
+        self.trial_peaks = get_peak_each_trial_no_nans(self.sorted_traces, self.time_points, other_time_point)
+        if not save_traces:
+            self.sorted_traces = None
 
 
 class BehaviouralEvents(object):
@@ -336,7 +395,7 @@ class BehaviouralEvents(object):
 
 
 class ChoiceAlignedData(object):
-    def __init__(self, session_data):
+    def __init__(self, session_data, save_traces=True):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
@@ -359,10 +418,10 @@ class ChoiceAlignedData(object):
             'cue': None}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
-        self.ipsi_data.get_peaks()
+        self.ipsi_data.get_peaks(save_traces=save_traces)
 
         self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
-        self.contra_data.get_peaks()
+        self.contra_data.get_peaks(save_traces=save_traces)
 
 
 class ChoiceAlignedEvents(object):
@@ -393,7 +452,7 @@ class ChoiceAlignedEvents(object):
         self.contra_data = BehaviouralEvents(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
 
 class CueAlignedData(object):
-    def __init__(self, session_data):
+    def __init__(self, session_data, save_traces=True):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
@@ -416,17 +475,19 @@ class CueAlignedData(object):
             'cue': None}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
-        self.ipsi_data.get_peaks()
+        self.ipsi_data.get_peaks(save_traces=save_traces)
         self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
-        self.contra_data.get_peaks()
+        self.contra_data.get_peaks(save_traces=save_traces)
 
         params['cue'] = 'high'
-        self.high_cue_data =  ZScoredTraces(trial_data, dff, params, 0, 0)
+        self.high_cue_data = ZScoredTraces(trial_data, dff, params, 0, 0)
+        self.high_cue_data.get_peaks(save_traces=save_traces)
         params['cue'] = 'low'
         self.low_cue_data = ZScoredTraces(trial_data, dff, params, 0, 0)
+        self.low_cue_data.get_peaks(save_traces=save_traces)
 
 class CueAlignedSidedData(object):
-    def __init__(self, session_data):
+    def __init__(self, session_data, save_traces=True):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
@@ -449,18 +510,22 @@ class CueAlignedSidedData(object):
             'cue': None}
 
         self.ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
-        self.ipsi_data.get_peaks()
+        self.ipsi_data.get_peaks(save_traces=save_traces)
         self.contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
-        self.contra_data.get_peaks()
+        self.contra_data.get_peaks(save_traces=save_traces)
 
         params['cue'] = 'high'
         self.high_cue_ipsi_data =  ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.high_cue_contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric, contra_fiber_side_numeric)
+        self.high_cue_ipsi_data.get_peaks(save_traces=save_traces)
+        self.high_cue_ipsi_data.get_peaks(save_traces=save_traces)
 
         params['cue'] = 'low'
         self.low_cue_ipsi_data = ZScoredTraces(trial_data, dff, params, fiber_side_numeric, fiber_side_numeric)
         self.low_cue_contra_data = ZScoredTraces(trial_data, dff, params, contra_fiber_side_numeric,
                                                   contra_fiber_side_numeric)
+        self.low_cue_ipsi_data.get_peaks(save_traces=save_traces)
+        self.low_cue_contra_data.get_peaks(save_traces=save_traces)
 
 
 class CueAlignedEvents(object):
@@ -494,7 +559,7 @@ class CueAlignedEvents(object):
         self.low_cue_data = BehaviouralEvents(trial_data, dff, params, 0, 0)
 
 class RewardAlignedData(object):
-    def __init__(self, session_data):
+    def __init__(self, session_data, save_traces=True):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
@@ -554,7 +619,7 @@ class RewardAlignedEvents(object):
 
 
 class RewardAndNoRewardAlignedData(object):
-    def __init__(self, session_data):
+    def __init__(self, session_data, save_traces=True):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
@@ -562,8 +627,8 @@ class RewardAndNoRewardAlignedData(object):
         dff = np.load(saving_folder + dff_trace_filename)
         response = 0
 
-        params = {'state_type_of_interest': 5,
-                  'outcome': 0,
+        params = {'state_type_of_interest': 5.5, #5.5
+                  'outcome': 2,
                   'last_outcome': 0,  # NOT USED CURRENTLY
                   'no_repeats': 0,
                   'last_response': 0,
@@ -573,6 +638,8 @@ class RewardAndNoRewardAlignedData(object):
                   'first_choice_correct': -1,
                   'cue': 'None'}
         self.no_reward_data = ZScoredTraces(trial_data, dff, params, response, response)
+        if not save_traces:
+            self.no_reward_data.sorted_traces=[]
         params = {'state_type_of_interest': 5,
                   'outcome': 1,
                   'last_outcome': 0,  # NOT USED CURRENTLY
@@ -584,6 +651,8 @@ class RewardAndNoRewardAlignedData(object):
                   'first_choice_correct': 1,
                   'cue': 'None'}
         self.reward_data = ZScoredTraces(trial_data, dff, params, response, response)
+        if not save_traces:
+            self.reward_data.sorted_traces = []
 
 
 

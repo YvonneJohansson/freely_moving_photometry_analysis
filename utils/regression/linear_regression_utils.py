@@ -58,6 +58,7 @@ def plot_kernels(parameter_names, regression_results, window_min=-1 * 10000 / 10
         axs[param_num].plot(shifts, param_kernel, label=param_name)
         axs[param_num].set_title(param_name)
         axs[param_num].set_xlabel('Time (s)')
+        axs[param_name].axvline(0, color='k')
 
 
 def save_kernels(save_filename, parameter_names, regression_results, downsampled_dff, X, window_min=-1 * 10000 / 100, window_max=1.5 * 10000/ 100):
@@ -83,7 +84,7 @@ def save_kernels(save_filename, parameter_names, regression_results, downsampled
         pickle.dump(downsampled_dff, f)
 
 
-def save_kernels_different_shifts(save_filename, parameter_names, regression_results, downsampled_dff, X, all_shifts, shift_window_sizes):
+def save_kernels_different_shifts(save_filename, parameter_names,params, regression_results, downsampled_dff, X, all_shifts, shift_window_sizes):
     param_kernels = {}
     shifts_for_saving = {}
     shift_window_lengths = {}
@@ -101,10 +102,13 @@ def save_kernels_different_shifts(save_filename, parameter_names, regression_res
     session_kernels['shift_window_lengths'] = shift_window_lengths
     session_kernels['intercept'] = regression_results.intercept_
     kernel_filename = save_filename + 'linear_regression_kernels_different_shifts.p'
+    params_filename = save_filename + 'linear_regression_parameters.p'
     inputs_X_filename = save_filename + 'linear_regression_different_shifts_X.p'
     inputs_y_filename = save_filename + 'linear_regression_different_shifts_y.p'
     with open(kernel_filename, "wb") as f:
         pickle.dump(session_kernels, f)
+    with open(params_filename, "wb") as f:
+        pickle.dump(params, f)
     with open(inputs_X_filename, "wb") as f:
         pickle.dump(X, f)
     with open(inputs_y_filename, "wb") as f:
@@ -140,15 +144,16 @@ def remove_one_parameter(param_names, params_to_remove, old_coefs, old_X, window
     return new_coefs, new_X, params_to_include
 
 
-def remove_one_parameter_different_shifts(param_names, params_to_remove, old_coefs, old_X, all_shifts, shift_window_sizes):
+def remove_one_parameter_different_shifts(param_names, params_to_remove, old_coefs, old_X, all_shifts, shift_window_sizes, remove=True):
     param_df = pd.DataFrame({'parameter': param_names, 'shifts': all_shifts, 'shift window sizes': shift_window_sizes})
-    params_to_include = param_df[~param_df['parameter'].isin(params_to_remove)]
+    if remove:
+        params_to_include = param_df[~param_df['parameter'].isin(params_to_remove)]
+    else:
+        params_to_include = param_df[param_df['parameter'].isin(params_to_remove)]
     params_to_include = params_to_include.reset_index(drop=False)
-    num_parameters = params_to_include.shape[0]
     new_coefs = np.zeros([np.sum(params_to_include['shift window sizes'])])
     new_X = np.zeros([old_X.shape[0], np.sum(params_to_include['shift window sizes'])])
     for param_num, param_row in params_to_include.iterrows():
-        shifts = param_row['shifts']
         shift_window_size = param_row['shift window sizes']
         old_index = param_row['index']
         new_index = param_num
@@ -162,8 +167,8 @@ def remove_one_parameter_different_shifts(param_names, params_to_remove, old_coe
     return new_coefs, new_X, params_to_include
 
 
-def remove_param_and_calculate_r2(param_names, param_to_remove, old_coefs, old_X, intercept, dff, shifts, window_sizes):
-    new_coefs, new_X, params = remove_one_parameter_different_shifts(param_names, param_to_remove, old_coefs, old_X, shifts, window_sizes)
+def remove_param_and_calculate_r2(param_names, param_to_remove, old_coefs, old_X, intercept, dff, shifts, window_sizes, remove=True):
+    new_coefs, new_X, params = remove_one_parameter_different_shifts(param_names, param_to_remove, old_coefs, old_X, shifts, window_sizes, remove=remove)
     new_pred = np.dot(new_X, new_coefs) + intercept
     old_pred = np.dot(old_X, old_coefs) + intercept
     old_r2 = explained_variance_score(dff, old_pred)

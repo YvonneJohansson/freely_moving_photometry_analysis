@@ -86,6 +86,7 @@ def get_regression_data_for_plot(recording_site='tail'):
     means, sems = organise_data_means(ipsi_choice_kernel, contra_choice_kernel, ipsi_cue_kernel, contra_cue_kernel, reward_kernel, no_reward_kernel)
     return time_stamps, means, sems
 
+
 def make_example_figure(ax1, ax2):
     axs= [ax1, ax2]
     mice_dates = pd.DataFrame(

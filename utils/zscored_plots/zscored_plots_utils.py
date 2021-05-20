@@ -17,6 +17,7 @@ def get_data_for_figure(recording_site):
     elif recording_site == 'TS':
         example_mouse = 'SNL_photo26'
         example_date = '20200812'
+
     saving_folder = 'W:\\photometry_2AC\\processed_data\\for_figure\\' + example_mouse + '\\'
     aligned_filename = example_mouse + '_' + example_date + '_' + 'aligned_traces_for_fig.p'
     save_filename = saving_folder + aligned_filename
@@ -37,13 +38,17 @@ def get_correct_data_for_plot(session_data, plot_type):
         raise ValueError('Unknown type of plot specified.')
     
     
-def get_data_for_recording_site(recording_site, ax):
+def get_data_for_recording_site(recording_site, ax, colours):
     aligned_session_data = get_data_for_figure(recording_site)
     all_data = []
     all_white_dot_points = []
     ymins = []
     ymaxs = []
     axes = []
+    if recording_site == 'VS':
+        colour = colours[0]
+    else:
+        colour = colours[1]
     for ax_type, ax in ax.items():
         data, sort_by = get_correct_data_for_plot(aligned_session_data, ax_type)
 
@@ -59,8 +64,8 @@ def get_data_for_recording_site(recording_site, ax):
         ymins.append(ymin)
         ymaxs.append(ymax)
         axes.append(ax[0])
-        plot_average_trace(ax[1], data)
-        ax[1].set_xlim([-1.5, 1.5])
+        #plot_average_trace(ax[1], data, colour=colour)
+        #ax[1].set_xlim([-1.5, 1.5])
     return axes, all_data, all_white_dot_points, ymins, ymaxs
 
 
@@ -69,9 +74,9 @@ def plot_all_heatmaps_same_scale(fig, axes, all_data, all_white_dot_points, cb_r
         heat_map = plot_heat_map(ax_id, all_data[ax_num], all_white_dot_points[ax_num], dff_range=cb_range)
         ax_id.set_xlim([-1.5, 1.5])
         divider = make_axes_locatable(ax_id)
-        cax = divider.append_axes("right", size="5%", pad=0.05)
+        cax = divider.append_axes("right", size="5%", pad=0.02)
         cb = plt.colorbar(heat_map, cax=cax)
-        cb.ax.set_title('z-score', fontsize=8, pad=0.05)
+        cb.ax.set_title('z-score', fontsize=8, pad=0.02)
     return heat_map
 
 
@@ -81,24 +86,56 @@ def get_min_and_max(data):
     ymax = np.max(data.sorted_traces)
     return ymax, ymin
 
-def plot_average_trace(ax, data, error_bar_method='sem'):
+def plot_average_trace(ax, data, error_bar_method='sem', colour='navy'):
     mean_trace = decimate(data.mean_trace, 10)
     time_points = decimate(data.time_points, 10)
     traces = decimate(data.sorted_traces, 10)
-    ax.plot(time_points, mean_trace, lw=1, color='navy')
+    ax.plot(time_points, mean_trace, lw=1, color=colour)# color='navy')
 
     if error_bar_method is not None:
         error_bar_lower, error_bar_upper = calculate_error_bars(mean_trace,
                                                                 traces,
                                                                 error_bar_method=error_bar_method)
         ax.fill_between(time_points, error_bar_lower, error_bar_upper, alpha=0.5,
-                            facecolor='navy', linewidth=0)
+                            facecolor=colour, linewidth=0)
 
 
-    ax.axvline(0, color='k', linewidth=1)
+    ax.axvline(0, color='k', linewidth=0.8)
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('z-score')
-        
+
+
+def get_all_mouse_data_for_site(site):
+    dir = 'W:\\photometry_2AC\\processed_data\\for_figure\\'
+    file_name = 'group_data_' + site + '.npz'
+    data = np.load(dir + file_name)
+    return data
+
+
+def plot_average_trace_all_mice(contra_ax, ipsi_ax, rew_ax, unrew_ax, site, error_bar_method='sem', colour='navy'):
+    all_data = get_all_mouse_data_for_site(site)
+    time_stamps = all_data['time_stamps']
+    data = dict(all_data)
+    del data['time_stamps']
+    axs = {'contra_choice': contra_ax, 'ipsi_choice': ipsi_ax, 'reward': rew_ax, 'no_reward': unrew_ax}
+    for trace_type, traces in data.items():
+        mean_trace = decimate(np.mean(traces, axis=0), 10)
+        time_points = decimate(time_stamps, 10)
+        traces = decimate(traces, 10)
+        axs[trace_type].plot(time_points, mean_trace, lw=1, color=colour)# color='navy')
+
+        if error_bar_method is not None:
+            error_bar_lower, error_bar_upper = calculate_error_bars(mean_trace,
+                                                                    traces,
+                                                                    error_bar_method=error_bar_method)
+            axs[trace_type].fill_between(time_points, error_bar_lower, error_bar_upper, alpha=0.5,
+                                 facecolor=colour, linewidth=0)
+
+
+        axs[trace_type].axvline(0, color='k', linewidth=0.8)
+        axs[trace_type].set_xlabel('Time (s)')
+        axs[trace_type].set_ylabel('z-score')
+        axs[trace_type].set_xlim([-1.5, 1.5])
 
 def plot_heat_map(ax, data, white_dot_point, dff_range=None):
     data.sorted_next_poke[-1] = np.nan

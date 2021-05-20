@@ -17,7 +17,7 @@ for date in dates:
     dff_trace_filename = mouse + '_' + date + '_' + 'smoothed_signal.npy'
     dff = np.load(saving_folder + dff_trace_filename)
 
-    behavioural_params = RawTracesZScored( fiber_side, mouse, date)
+    behavioural_params = RawTracesZScored(fiber_side, mouse, date)
     behavioural_params.get_peaks(dff, trial_data)
     mean_and_sem_filename = mouse + '_' + date + '_' + 'peaks_correct_data.p'
     save_filename = saving_folder + mean_and_sem_filename

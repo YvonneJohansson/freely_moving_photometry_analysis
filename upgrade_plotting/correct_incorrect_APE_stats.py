@@ -22,6 +22,7 @@ from utils.plotting import calculate_error_bars
 
 def get_correct_incorrect_trials(experiments_to_process):
     exp_numbers = []
+    mice = []
     for index, experiment in experiments_to_process.iterrows():
         mouse = experiment['mouse_id']
         date = experiment['date']
@@ -41,19 +42,29 @@ def get_correct_incorrect_trials(experiments_to_process):
             content = pickle.load(f)
         print(mouse, date)
         if index == 0:
-            correct = content.choice_data.contra_correct_data.sorted_traces[:,int(160000/2-20000):int(160000/2+20000)]
-            incorrect = content.choice_data.contra_incorrect_data.sorted_traces[:,int(160000/2-20000):int(160000/2+20000)]
-            time_stamps = content.choice_data.contra_correct_data.time_points[int(160000/2-20000):int(160000/2+20000)]
+            correct = content.choice_data.contra_correct_data.sorted_traces[:,
+                      int(160000 / 2 - 20000):int(160000 / 2 + 20000)]
+            incorrect = content.choice_data.contra_incorrect_data.sorted_traces[:,
+                        int(160000 / 2 - 20000):int(160000 / 2 + 20000)]
+            time_stamps = content.choice_data.contra_correct_data.time_points[
+                          int(160000 / 2 - 20000):int(160000 / 2 + 20000)]
             correct_trial_nums = content.choice_data.contra_correct_data.trial_nums + session_start_trial
             incorrect_trial_nums = content.choice_data.contra_incorrect_data.trial_nums + session_start_trial
             reaction_times = content.choice_data.contra_incorrect_data.reaction_times
+            correct_reaction_times = content.choice_data.contra_correct_data.reaction_times
         else:
-            correct = np.vstack([correct, content.choice_data.contra_correct_data.sorted_traces[:,int(160000/2-20000):int(160000/2+20000)]])
-            incorrect = np.vstack([incorrect,content.choice_data.contra_incorrect_data.sorted_traces[:,int(160000/2-20000):int(160000/2+20000)]])
-            correct_trial_nums = np.concatenate((correct_trial_nums, content.choice_data.contra_correct_data.trial_nums + session_start_trial))
-            incorrect_trial_nums = np.concatenate((incorrect_trial_nums, content.choice_data.contra_incorrect_data.trial_nums + session_start_trial))
+            correct = np.vstack([correct, content.choice_data.contra_correct_data.sorted_traces[:,
+                                          int(160000 / 2 - 20000):int(160000 / 2 + 20000)]])
+            incorrect = np.vstack([incorrect, content.choice_data.contra_incorrect_data.sorted_traces[:,
+                                              int(160000 / 2 - 20000):int(160000 / 2 + 20000)]])
+            correct_trial_nums = np.concatenate(
+                (correct_trial_nums, content.choice_data.contra_correct_data.trial_nums + session_start_trial))
+            incorrect_trial_nums = np.concatenate(
+                (incorrect_trial_nums, content.choice_data.contra_incorrect_data.trial_nums + session_start_trial))
             reaction_times = np.concatenate((reaction_times, content.choice_data.contra_incorrect_data.reaction_times))
-    return correct, incorrect, correct_trial_nums, incorrect_trial_nums, reaction_times, time_stamps
+            correct_reaction_times = np.concatenate(
+                (correct_reaction_times, content.choice_data.contra_correct_data.reaction_times))
+    return correct, incorrect, correct_trial_nums, incorrect_trial_nums, correct_reaction_times, reaction_times, time_stamps
 
 
 def find_nearest_trials(target_trials, other_trials):
@@ -108,22 +119,42 @@ all_experiments_to_process = clean_experiments[
 experiments_to_process = remove_bad_recordings(all_experiments_to_process).reset_index(drop=True)
 for mouse_ind, mouse in enumerate(mouse_ids):
     mouse_experiments = experiments_to_process[experiments_to_process['mouse_id'] == mouse].reset_index(drop=True)
-    correct, incorrect, correct_trial_nums, incorrect_trial_nums, reaction_times, time_stamps = get_correct_incorrect_trials(mouse_experiments)
+    correct, incorrect, correct_trial_nums, incorrect_trial_nums, correct_reaction_times, incorrect_reaction_times, time_stamps = get_correct_incorrect_trials(mouse_experiments)
+    upper_quartile = np.quantile(correct_reaction_times, 0.75)
+    lower_quartile = np.quantile(correct_reaction_times, 0.25)
+    incorrect_reaction_times_valid_inds = np.where(incorrect_reaction_times <= upper_quartile)
+    correct_reaction_times_valid_inds = np.where(correct_reaction_times <= upper_quartile)
+    correct_reaction_times = correct_reaction_times[correct_reaction_times_valid_inds]
+    incorrect_reaction_times = incorrect_reaction_times[incorrect_reaction_times_valid_inds]
+    incorrect_trial_nums = incorrect_trial_nums[incorrect_reaction_times_valid_inds]
+    incorrect = incorrect[incorrect_reaction_times_valid_inds]
+    correct_trial_nums = correct_trial_nums[correct_reaction_times_valid_inds]
+    correct = correct[correct_reaction_times_valid_inds]
+
     max_trials = np.max(np.concatenate((incorrect_trial_nums, correct_trial_nums)))
     early_incorrect_trials = incorrect_trial_nums[incorrect_trial_nums < int(max_trials/3)]
     mid_incorrect_trials = incorrect_trial_nums[np.logical_and(incorrect_trial_nums < int(max_trials/3)*2, incorrect_trial_nums > int(max_trials/3))]
     late_incorrect_trials = incorrect_trial_nums[np.logical_and(incorrect_trial_nums <= max_trials, incorrect_trial_nums > int(max_trials/3)*2)]
 
-    early_incorrect_inds = np.nonzero(np.in1d(early_incorrect_trials, incorrect_trial_nums))[0]
-    mid_incorrect_inds = np.nonzero(np.in1d(mid_incorrect_trials, incorrect_trial_nums))[0]
-    late_incorrect_inds = np.nonzero(np.in1d(late_incorrect_trials, incorrect_trial_nums))[0]
+    early_incorrect_inds = np.nonzero(np.in1d(incorrect_trial_nums, early_incorrect_trials))[0]
+    mid_incorrect_inds = np.nonzero(np.in1d(incorrect_trial_nums, mid_incorrect_trials))[0]
+    late_incorrect_inds = np.nonzero(np.in1d(incorrect_trial_nums, late_incorrect_trials))[0]
     early_correct_inds = find_nearest_trials(early_incorrect_trials, correct_trial_nums)
     mid_correct_inds = find_nearest_trials(mid_incorrect_trials, correct_trial_nums)
     late_correct_inds = find_nearest_trials(late_incorrect_trials, correct_trial_nums)
 
-    median_reaction_time = np.median(reaction_times)
-    sd_reaction_times = np.std(reaction_times)
-    limit = sd_reaction_times + median_reaction_time
+    #early_correct_trials = correct_trial_nums[correct_trial_nums < int(max_trials / 3)]
+    #mid_correct_trials = correct_trial_nums[
+    #    np.logical_and(correct_trial_nums < int(max_trials / 3) * 2, correct_trial_nums > int(max_trials / 3))]
+    #late_correct_trials = correct_trial_nums[
+    #    np.logical_and(correct_trial_nums <= max_trials, correct_trial_nums > int(max_trials / 3) * 2)]
+    #early_correct_inds = np.nonzero(np.in1d(correct_trial_nums, early_correct_trials))[0]
+    #mid_correct_inds = np.nonzero(np.in1d(correct_trial_nums, mid_correct_trials))[0]
+    #late_correct_inds = np.nonzero(np.in1d(correct_trial_nums, late_correct_trials))[0]
+    all_reaction_times = np.concatenate([incorrect_reaction_times, correct_reaction_times])
+    median_reaction_time = np.median(all_reaction_times)
+    sd_reaction_times = np.std(all_reaction_times)
+    limit = 2 * sd_reaction_times + median_reaction_time
     early_correct_trial_peaks, trial_peak_inds = get_peak(correct, early_correct_inds, limit)
     early_incorrect_trial_peaks, trial_peak_inds = get_peak(incorrect, early_incorrect_inds, limit)
     mid_correct_trial_peaks, trial_peak_inds = get_peak(correct, mid_correct_inds, limit)
@@ -145,13 +176,13 @@ data = pd.DataFrame({'mouse': np.squeeze(mice), 'trial outcome': np.squeeze(tria
 correct_data = data[data['trial outcome'] == 'correct'].reset_index(drop=True).copy(deep=True)
 diff_data = correct_data[['mouse', 'learning phase']]
 diff_data['difference'] = data[data['trial outcome'] == 'incorrect']['response size'].reset_index(drop=True).copy(deep=True) - correct_data['response size']
-fig, axs = plt.subplots(1,4)
+fig, axs = plt.subplots(1,1)
 for mouse in mouse_ids:
     data_for_plot = data[data['mouse'] == mouse].copy(deep=True)
     responses = data_for_plot.loc[:, ['response size']]
     data_for_plot['normalised response size'] = responses/data_for_plot.loc[(data_for_plot['learning phase']== 'early') & (data_for_plot['trial outcome'] == 'correct')]['response size'].values[0]
-    sns.pointplot(x='learning phase', y='response size', data=data_for_plot, hue='trial outcome', palette=['green', 'red'], ax=axs[0], legend=False)
-    axs[0].get_legend().remove()
+    sns.pointplot(x='learning phase', y='response size', data=data_for_plot, hue='trial outcome', palette=['green', 'red'], ax=axs, legend=False)
+    axs.get_legend().remove()
 
 fig, axs = plt.subplots(1,3, sharey=True)
 sns.pointplot(x='trial outcome', y='response size', data=data[data['learning phase'] == 'early'], hue='mouse', ax=axs[0], legend=False)
@@ -159,7 +190,7 @@ axs[0].get_legend().remove()
 sns.pointplot(x='trial outcome', y='response size', data=data[data['learning phase'] == 'mid'], hue='mouse', ax=axs[1], legend=False)
 axs[1].get_legend().remove()
 sns.pointplot(x='trial outcome', y='response size', data=data[data['learning phase'] == 'late'], hue='mouse', ax=axs[2], legend=False)
-axs[2].get_legend().remove()
+
 fig, axs = plt.subplots(1,1)
 sns.pointplot(x='learning phase', y='difference', data=diff_data, ax=axs, legend=False, hue='mouse')
 plt.show()

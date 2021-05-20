@@ -25,7 +25,7 @@ def add_experiment_to_aligned_data(experiments_to_add):
 
 
 if __name__ == '__main__':
-    mouse_ids =  ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+    mouse_ids = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
     site = 'Nacc'
     experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
     experiment_record['date'] = experiment_record['date'].astype(str)
@@ -35,17 +35,17 @@ if __name__ == '__main__':
         drop=True)
     experiments_to_process = get_first_x_sessions(all_experiments_to_process)
     add_experiment_to_aligned_data(experiments_to_process)
-    # date = 'all'
+    # date = '20201119'
     # for mouse_id in mouse_ids:
     #     all_experiments = get_all_experimental_records()
-        #
-        # if (mouse_id =='all') & (date == 'all'):
-        #     experiments_to_process = all_experiments
-        # elif (mouse_id == 'all') & (date != 'all'):
-        #     experiments_to_process = all_experiments[all_experiments['date'] == date]
-        # elif (mouse_id != 'all') & (date == 'all'):
-        #     experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
-        # elif (mouse_id != 'all') & (date != 'all'):
-        #     experiments_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
-        # add_experiment_to_aligned_data(experiments_to_process)
+    #
+    #     if (mouse_id =='all') & (date == 'all'):
+    #         experiments_to_process = all_experiments
+    #     elif (mouse_id == 'all') & (date != 'all'):
+    #         experiments_to_process = all_experiments[all_experiments['date'] == date]
+    #     elif (mouse_id != 'all') & (date == 'all'):
+    #         experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
+    #     elif (mouse_id != 'all') & (date != 'all'):
+    #         experiments_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
+    #     add_experiment_to_aligned_data(experiments_to_process)
 
