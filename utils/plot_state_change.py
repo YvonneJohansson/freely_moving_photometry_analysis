@@ -3,15 +3,16 @@ import os
 processed_data_dir = os.path.join('W:\\photometry_2AC\\processed_data\\state_change_data')
 state_change_data_file = os.path.join(processed_data_dir, 'state_change_data_nacc_mice.csv')
 
-mice = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+mice = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']#['SNL_photo21', 'SNL_photo22', 'SNL_photo26', 'SNL_photo37', 'SNL_photo43', 'SNL_photo44']#['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
 for mouse_num, mouse_id in enumerate(mice):
     state_change_data = {}
-    date = '20201216'
+    exp_type = 'state change white noise'
     all_experiments = get_all_experimental_records()
-    experiment_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
+    all_experiments = remove_bad_recordings(all_experiments)
+    experiment_to_process = all_experiments[(all_experiments['experiment_notes'] == exp_type) & (all_experiments['mouse_id'] == mouse_id)]
     session_data = open_experiment(experiment_to_process)[0]
 
-    params = {'state_type_of_interest': 3, # 3 for nacc
+    params = {'state_type_of_interest': 3, # 3 for nacc, 5 for tail
         'outcome': 2,
         'last_outcome': 0,  # NOT USED CURRENTLY
         'no_repeats' : 0,
@@ -42,7 +43,7 @@ for mouse_num, mouse_id in enumerate(mice):
     else:
         all_state_change_data = state_change_dataFrame
 
-state_change_data_file2 = os.path.join(processed_data_dir, 'state_change_data_nacc_mice_test.csv')
+#state_change_data_file2 = os.path.join(processed_data_dir, 'state_change_data_tail_mice_test.csv')
 
 all_state_change_data.to_pickle(state_change_data_file)
 

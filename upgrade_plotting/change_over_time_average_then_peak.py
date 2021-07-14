@@ -14,7 +14,7 @@ from utils.change_over_time_plot_utils import  *
 font = {'size': 8}
 matplotlib.rc('font', **font)
 fig, ax = plt.subplots(2, 2, constrained_layout=True)
-tail_mice = ['SNL_photo17']
+tail_mice = ['SNL_photo37', 'SNL_photo43', 'SNL_photo44']
 make_change_over_time_plot(tail_mice, ax[1, 0])
 ax[1, 0].set_title('C', loc='left', fontweight='bold')
 #nacc_mice = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']

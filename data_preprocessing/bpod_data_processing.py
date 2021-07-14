@@ -10,6 +10,7 @@ import math
 
 def find_bpod_file(mouse, date, protocol_type):
     Bpod_data_path = 'W:\\photometry_2AC\\bpod_data\\' + mouse + '\\' + protocol_type + '\\Session Data\\'
+    #Bpod_data_path = 'C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\bpod_data\\'+ mouse + '\\' + protocol_type + '\\Session Data\\'
     Bpod_file_search_tool = mouse + '_' + protocol_type + '_' + date
     files_in_bpod_path = os.listdir(Bpod_data_path)
     files_on_that_day = [s for s in files_in_bpod_path if Bpod_file_search_tool in s]
@@ -30,6 +31,7 @@ def find_bpod_file(mouse, date, protocol_type):
 
 def find_daq_file(mouse, date):
     daq_data_path = 'W:\\photometry_2AC\\freely_moving_photometry_data\\' + mouse + '\\'
+    #daq_data_path ='C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\freely_moving_photometry_data\\' + mouse + '\\'
     folders_in_photo_path = os.listdir(daq_data_path)
     folders_on_that_day = [s for s in folders_in_photo_path if date in s]
 

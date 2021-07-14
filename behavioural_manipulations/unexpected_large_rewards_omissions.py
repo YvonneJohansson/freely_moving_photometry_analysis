@@ -13,15 +13,17 @@ if not os.path.exists(processed_data_dir):
     os.makedirs(processed_data_dir)
 
 all_experiments = get_all_experimental_records()
-mice = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
-sessions = ['20201221', '20201222']
+mice = ['SNL_photo37', 'SNL_photo43', 'SNL_photo21', 'SNL_photo22', 'SNL_photo26']#['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
 
-block_data_file = os.path.join(processed_data_dir, 'all_nacc_reward_change_data.csv')
+block_data_file = os.path.join(processed_data_dir, 'all_tail_reward_change_data_new.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)
 else:
     for mouse_num, mouse_id in enumerate(mice):
+        sessions = all_experiments[
+            (all_experiments['mouse_id'] == mouse_id) & (all_experiments['experiment_notes'] == 'omissions and large rewards')][
+            'date'].values
         for session_idx, date in enumerate(sessions):
             experiment_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
             session_data, behavioural_data = open_experiment(experiment_to_process)

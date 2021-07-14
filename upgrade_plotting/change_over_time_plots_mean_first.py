@@ -12,7 +12,7 @@ from matplotlib import cm
 import seaborn as sns
 data_root = r'W:\photometry_2AC\processed_data\peak_analysis'
 
-mice = ['SNL_photo17', 'SNL_photo18', 'SNL_photo21', 'SNL_photo22', 'SNL_photo26']
+mice = [ 'SNL_photo37', 'SNL_photo43', 'SNL_photo44']
 recording_site = 'tail'
 window_for_binning = 40
 fig, ax = plt.subplots(1, 2)

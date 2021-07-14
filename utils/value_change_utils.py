@@ -36,17 +36,6 @@ def get_all_experimental_records():
     return experiment_record
 
 
-def open_experiment(experiment_to_add):
-    for index, experiment in experiment_to_add.iterrows():
-        saving_folder = 'W:\\photometry_2AC\\processed_data\\' + experiment['mouse_id'] + '\\'
-        restructured_data_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'restructured_data.pkl'
-        trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
-        dff_trace_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'smoothed_signal.npy'
-        dff = np.load(saving_folder + dff_trace_filename)
-        session_traces = SessionData(experiment['fiber_side'], experiment['recording_site'], experiment['mouse_id'], experiment['date'])
-    return trial_data, session_traces
-
-
 class ZScoredTracesRewardBlocks(object):
     def __init__(self,  trial_data, dff, params, response, first_choice, reward_block):
         self.trial_peaks = None

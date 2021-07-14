@@ -114,14 +114,16 @@ def save_kernels_different_shifts(save_filename, parameter_names,params, regress
     with open(inputs_y_filename, "wb") as f:
         pickle.dump(downsampled_dff, f)
 
-
-
 def get_first_x_sessions(sorted_experiment_record, x=3):
     i = []
+    inds = []
     for mouse in np.unique(sorted_experiment_record['mouse_id']):
         i.append(sorted_experiment_record[sorted_experiment_record['mouse_id'] == mouse][0:3].index)
+        inds += range(0, 3)
     flattened_i = [val for sublist in i for val in sublist]
-    return (sorted_experiment_record.loc[flattened_i])
+    exps = sorted_experiment_record.loc[flattened_i].reset_index(drop=True)
+    exps['session number'] = inds
+    return exps
 
 
 def remove_one_parameter(param_names, params_to_remove, old_coefs, old_X, window_min=-0.5*10000/100, window_max=1.5*10000/100):

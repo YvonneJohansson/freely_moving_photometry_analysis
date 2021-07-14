@@ -18,12 +18,12 @@ def make_change_over_time_plot(mice, ax, window_for_binning=40):
     interp_y = []
     for mouse_num, mouse in enumerate(mice):
         saving_folder = os.path.join(data_root, mouse)
-        filename = mouse + '_binned_' + str(window_for_binning) + '_average_then_peaks_peaks_new.npz'
+        filename = mouse + '_binned_' + str(window_for_binning) + '_average_then_peaks_peaks.npz'
         save_filename = os.path.join(saving_folder, filename)
         rolling_mean_data = np.load(save_filename)
         rolling_mean_x = rolling_mean_data['rolling_mean_x']
         rolling_mean_peaks = rolling_mean_data['rolling_mean_peaks']
-        rolling_mean_traces = rolling_mean_data['rolling_mean_traces']
+        rolling_mean_traces = rolling_mean_data['rolling_mean_trace']
         peak_trace_inds = rolling_mean_data['peak_trace_inds']
         f = interp1d(rolling_mean_x, rolling_mean_peaks)
         xnew = np.arange(int(np.min(rolling_mean_x)) + 1, int(np.max(rolling_mean_x)) - 1)

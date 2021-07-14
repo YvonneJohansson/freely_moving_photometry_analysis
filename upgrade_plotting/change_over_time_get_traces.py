@@ -10,9 +10,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import seaborn as sns
+
+
+# Saves out the files needed to plot change over time
 data_root = r'W:\photometry_2AC\processed_data\peak_analysis'
 
-mice = ['SNL_photo17']
+mice = ['SNL_photo37']
 recording_site = 'tail'
 window_for_binning = 40
 for mouse_num, mouse in enumerate(mice):
@@ -25,9 +28,9 @@ for mouse_num, mouse in enumerate(mice):
     dates = experiments_to_process['date'].values
     rolling_mean_x, rolling_mean_peaks, peak_trace_inds, rolling_mean_traces = get_valid_traces(mouse, dates, window_around_mean=0.2, recording_site=recording_site, side='contra', window_size=window_for_binning)
     saving_folder = os.path.join(data_root, mouse)
-    filename = mouse + '_binned_' + str(window_for_binning) + '_average_then_peaks_peaks_new.npz'
+    filename = mouse + '_binned_' + str(window_for_binning) + '_average_then_peaks_peaks.npz'
     save_filename = os.path.join(saving_folder, filename)
-    np.savez(save_filename, rolling_mean_x=rolling_mean_x, rolling_mean_peaks=rolling_mean_peaks, rolling_mean_traces=rolling_mean_traces, peak_trace_inds=peak_trace_inds)
+    np.savez(save_filename, rolling_mean_x=rolling_mean_x, rolling_mean_peaks=rolling_mean_peaks, rolling_mean_trace=rolling_mean_traces, peak_trace_inds=peak_trace_inds)
 
 # mice = ['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
 # recording_site = 'Nacc'
@@ -42,5 +45,5 @@ for mouse_num, mouse in enumerate(mice):
 #     rolling_mean_peaks = rolling_mean_data['rolling_mean_peaks']
 #     rolling_mean_traces = rolling_mean_data['rolling_mean_trace']
 #     peak_trace_inds = rolling_mean_data['peak_trace_inds']
-#
+
 

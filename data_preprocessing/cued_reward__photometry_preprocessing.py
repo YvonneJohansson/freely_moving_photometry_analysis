@@ -11,12 +11,12 @@ import utils.cued_reward_utils as bpod
 from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
 
-mouse = 'SNL_photo18_rewards'
-date = '20200320'
-daq_file = bpod.find_daq_file(mouse, date, 'Cued_Reward')
+mouse = 'SNL_photo45'
+date = '20210709'
+daq_file = bpod.find_daq_file(mouse, date)
 data = nptdms.TdmsFile(daq_file)
 
-main_session_file = bpod.find_bpod_file(mouse, date)
+main_session_file = bpod.find_bpod_file(mouse, date, 'Cued_Reward')
 loaded_bpod_file, trial_raw_events = bpod.load_bpod_file(main_session_file)
 
 chan_0 = data.group_channels('acq_task')[0].data
@@ -35,8 +35,8 @@ if daq_num_trials != bpod_num_trials:
     print('bpod: ', bpod_num_trials)
 else:
     print(daq_num_trials, 'trials in session')
-
-signal, back = demodulate(chan_0, led465, led405)
+sampling_rate = 10000
+signal, back = demodulate(chan_0, led465, led405, sampling_rate)
 
 sampling_rate = 10000
 GCaMP_raw = signal[sampling_rate:]

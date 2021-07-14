@@ -191,7 +191,7 @@ class CustomAlignedDataPsychometric(object):
 
     def add_experiment(self, session_data, params):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
-        restructured_data_filename = session_data.mouse + '_' + sessiofn_data.date + '_' + 'restructured_data.pkl'
+        restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
         dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
         dff = np.load(saving_folder + dff_trace_filename)

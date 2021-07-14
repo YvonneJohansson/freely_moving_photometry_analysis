@@ -111,6 +111,7 @@ def find_and_z_score_traces(trial_data, demod_signal, params, norm_window=8, sor
                     events_of_int = events_of_int.drop(second_event)
 
     else:
+        print(trial_data.shape)
         events_of_int = trial_data.loc[(trial_data['State type'] == params.state)]
 
     if params.response != 0:

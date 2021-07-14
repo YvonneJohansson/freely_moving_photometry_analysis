@@ -9,6 +9,8 @@ from utils.individual_trial_analysis_utils import ZScoredTraces, SessionData, Cu
 class CustomAlignedData(object):
     def __init__(self, session_data, params, peak_quantification=True):
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + session_data.mouse + '\\'
+        #saving_folder = 'C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\processed_data' + \
+        #                session_data.mouse + '\\'
         restructured_data_filename = session_data.mouse + '_' + session_data.date + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
         dff_trace_filename = session_data.mouse + '_' + session_data.date + '_' + 'smoothed_signal.npy'
@@ -33,7 +35,7 @@ def get_all_experimental_records():
 def find_manipulation_days(experiment_records, mice):
     experiments = experiment_records[experiment_records['mouse_id'].isin(mice)]
     exemption_list = ['psychometric', 'state change medium cloud', 'value blocks', 'state change white noise',
-                      'omissions and large rewards', 'contingency switch', 'ph3', 'saturation']
+                      'omissions and large rewards', 'contingency switch', 'ph3', 'saturation', 'centre port hold']
     exemptions = '|'.join(exemption_list)
     index_to_remove = experiments[experiments['experiment_notes'].str.contains(exemptions,na=False)].index
     mouse_dates = experiments.loc[index_to_remove][['mouse_id', 'date']].reset_index(drop=True)
@@ -74,9 +76,21 @@ def remove_bad_recordings(experiments):
 def open_experiment(experiment_to_add):
     for index, experiment in experiment_to_add.iterrows():
         saving_folder = 'W:\\photometry_2AC\\processed_data\\' + experiment['mouse_id'] + '\\'
+        #saving_folder = 'C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\processed_data' + experiment['mouse_id'] + '\\'
         restructured_data_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'restructured_data.pkl'
         trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
         dff_trace_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'smoothed_signal.npy'
         dff = np.load(saving_folder + dff_trace_filename)
         session_traces = SessionData(experiment['fiber_side'], experiment['recording_site'], experiment['mouse_id'], experiment['date'])
     return session_traces, trial_data
+
+
+def open_one_experiment(experiment):
+    ## takes a row of a dataframe as input
+    saving_folder = 'W:\\photometry_2AC\\processed_data\\' + experiment['mouse_id'] + '\\'
+    restructured_data_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'restructured_data.pkl'
+    trial_data = pd.read_pickle(saving_folder + restructured_data_filename)
+    dff_trace_filename = experiment['mouse_id'] + '_' + experiment['date'] + '_' + 'smoothed_signal.npy'
+    dff = np.load(saving_folder + dff_trace_filename)
+    session_traces = SessionData(experiment['fiber_side'], experiment['recording_site'], experiment['mouse_id'], experiment['date'])
+    return trial_data, session_traces

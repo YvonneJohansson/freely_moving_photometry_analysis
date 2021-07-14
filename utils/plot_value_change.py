@@ -4,32 +4,40 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos\\Python_g
 sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 import numpy as np
 import pandas as pd
-from utils.value_change_utils import open_experiment, CustomAlignedDataRewardBlocks, get_all_experimental_records, get_block_change_info, add_traces_and_peaks, plot_mean_trace_for_condition, one_session_get_block_changes
-
+from utils.value_change_utils import CustomAlignedDataRewardBlocks, get_all_experimental_records, get_block_change_info, add_traces_and_peaks, plot_mean_trace_for_condition, one_session_get_block_changes
+from post_processing_utils import *
 exp_name = 'value_change'
 processed_data_dir = os.path.join(os.getcwd(), 'value_change_data')
+
+processed_data_dir = os.path.join('W:\\photometry_2AC\\processed_data\\value_switch_data')
+block_data_file = os.path.join(processed_data_dir, 'block_data_tail_mice.csv')
+
 if not os.path.exists(processed_data_dir):
     os.makedirs(processed_data_dir)
 
 all_experiments = get_all_experimental_records()
 block_types = pd.DataFrame({'block type': [1, 2, 3, 4, 5], 'left reward': [6, 4, 2, 2, 2], 'right reward': [2, 2, 2, 4, 6]})
 
-mice =['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35'] #['SNL_photo21', 'SNL_photo22', 'SNL_photo26'] for tail
-sessions = ['20201218', '20201219'] #['20200917', '20200918', '20200921'] for tail
+mice = ['SNL_photo37', 'SNL_photo43', 'SNL_photo44'] #['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
 
-block_data_file = os.path.join(processed_data_dir, 'block_data_nacc_mice.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)
 else:
     for mouse_num, mouse_id in enumerate(mice):
-        for session_idx, date in enumerate(sessions):
-            experiment_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
-            behavioural_data, session_data = open_experiment(experiment_to_process)
+        exp_type = 'value switch'
+        all_experiments = get_all_experimental_records()
+        all_experiments = remove_bad_recordings(all_experiments)
+        experiments_to_process = all_experiments[
+            (all_experiments['experiment_notes'] == exp_type) & (all_experiments['mouse_id'] == mouse_id)]
+        sessions = experiments_to_process.reset_index(drop=True) # ['20200917', '20200918', '20200921'] for tail
+        for session_idx, experiment_to_process in sessions.iterrows():
+            behavioural_data, session_data = open_one_experiment(experiment_to_process)
+            date = experiment_to_process['date']
             for reward_block in range(1,6):
-                one_reward_block_data = {}
-                print(reward_block)
                 try:
+                    one_reward_block_data = {}
+                    print(reward_block)
                     params = {'state_type_of_interest': 3, # 5 for tail
                         'outcome': 2,
                         'last_outcome': 0,  # NOT USED CURRENTLY
@@ -75,9 +83,9 @@ else:
                         all_reward_block_data = pd.concat([all_reward_block_data, one_reward_block_dataf], ignore_index=True)
                     else:
                         all_reward_block_data = one_reward_block_dataf
-
-                except:
+                except IndexError:
                     pass
+
 
     all_reward_block_data.to_pickle(block_data_file)
 

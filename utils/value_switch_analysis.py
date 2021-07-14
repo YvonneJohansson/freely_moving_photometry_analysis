@@ -4,7 +4,8 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos\\Python_g
 sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 import numpy as np
 import pandas as pd
-from utils.value_change_utils import open_experiment, CustomAlignedDataRewardBlocks, get_all_experimental_records, get_block_change_info, add_traces_and_peaks, plot_mean_trace_for_condition, one_session_get_block_changes
+from post_processing_utils import open_experiment
+from utils.value_change_utils import CustomAlignedDataRewardBlocks, get_all_experimental_records, get_block_change_info, add_traces_and_peaks, plot_mean_trace_for_condition, one_session_get_block_changes
 
 exp_name = 'value_change'
 processed_data_dir = os.path.join(os.getcwd(), 'value_change_data')
@@ -14,10 +15,10 @@ if not os.path.exists(processed_data_dir):
 all_experiments = get_all_experimental_records()
 #block_types = pd.DataFrame({'block type': [1, 2, 3, 4, 5], 'left reward': [6, 4, 2, 2, 2], 'right reward': [2, 2, 2, 4, 6]})
 block_types = pd.DataFrame({'block type': [0, 1, 5], 'left reward': [2, 6, 2], 'right reward': [2, 2, 6]})
-mice = ['SNL_photo37', 'SNL_photo43'] #['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
+mice = ['SNL_photo37', 'SNL_photo43', 'SNL_photo44'] #['SNL_photo28', 'SNL_photo30', 'SNL_photo31', 'SNL_photo32', 'SNL_photo34', 'SNL_photo35']
 #sessions = ['20210126', '20210127'] #['20200917', '20200918', '20200921'] for tail
 
-block_data_file = os.path.join(processed_data_dir, 'value_switch_tail_mice.csv')
+block_data_file = os.path.join(processed_data_dir, 'value_switch_all_tail_mice_test.csv')
 
 if os.path.isfile(block_data_file):
     all_reward_block_data = pd.read_pickle(block_data_file)
@@ -26,7 +27,7 @@ else:
         sessions = all_experiments[(all_experiments['mouse_id'] == mouse_id) & (all_experiments['experiment_notes'] == 'value switch')]['date'].values
         for session_idx, date in enumerate(sessions):
             experiment_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
-            behavioural_data, session_data = open_experiment(experiment_to_process)
+            session_data, behavioural_data = open_experiment(experiment_to_process)
             #for reward_block in range(1,6):
             for reward_block in ([0, 1, 5]):
                 one_reward_block_data = {}
@@ -78,7 +79,7 @@ else:
                     else:
                         all_reward_block_data = one_reward_block_dataf
 
-                except:
+                except IndexError:
                     pass
 
     all_reward_block_data.to_pickle(block_data_file)

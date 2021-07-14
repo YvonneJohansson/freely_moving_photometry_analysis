@@ -12,10 +12,10 @@ from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
 
 mouse = 'test_opto_mouse'
-daq_date = '20210520_16_57_27'
+daq_date = '20210603_16_13_39'
 daq_file = bpod.find_daq_file(mouse, daq_date)
 data = nptdms.TdmsFile(daq_file)
-bpod_date = '20210520_165741'
+bpod_date = '20210603_161356'
 main_session_file = bpod.find_bpod_file(mouse, bpod_date, 'Opto_stim_for_photometry')
 loaded_bpod_file, trial_raw_events = bpod.load_bpod_file(main_session_file)
 
