@@ -8,7 +8,7 @@ import matplotlib.pylab as plt
 import numpy as np
 import seaborn as sns
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from utils.behavioural_utils.upgrade_fig1_utils import prep_data_for_learning_curve, discrimination_final_session, last_session_discrimination_plot, get_stimulus_examples, plot_spectrograms
+from utils.behavioural_utils.upgrade_fig1_utils import prep_data_for_learning_curve, discrimination_final_session,get_psychometric_sessions, last_session_discrimination_plot, get_stimulus_examples, plot_spectrograms
 from utils.plotting_visuals import makes_plots_pretty
 
 # Makes figure 1 for upgrade
@@ -18,6 +18,7 @@ max_trials = 10000
 df_for_plot = prep_data_for_learning_curve(data_set, ans_to_remove)
 final_session_data = discrimination_final_session(df_for_plot)
 df_for_plot_limited = df_for_plot[df_for_plot['CumulativeTrialNumberByProtocol'] < max_trials]
+psycho_data = get_psychometric_sessions(data_set)
 
 final_session_data = discrimination_final_session(df_for_plot)
 
@@ -33,8 +34,11 @@ cloud_of_tones_low_ax.set_title('B', loc='left', fontweight='bold')
 cloud_of_tones_high_ax = fig.add_subplot(gs[0:2, 3])
 expert_mice_ax = fig.add_subplot(gs[2:4, 2:])
 expert_mice_ax.set_title('C', loc='left', fontweight='bold')
-learning_curves_ax = fig.add_subplot(gs[4:, :])
+learning_curves_ax = fig.add_subplot(gs[4:, 0:2])
 learning_curves_ax.set_title('D', loc='left', fontweight='bold')
+psycho_curves_ax = fig.add_subplot(gs[4:, 2:4])
+psycho_curves_ax.set_title('E', loc='left', fontweight='bold')
+sns.pointplot(data=psycho_data, x='Percentage low tones', y='Percentage rightwards choices',  color='k', scale=0.5, ax=psycho_curves_ax, errwidth=1)
 #raw_data_ax = inset_axes(learning_curves_ax, width='40%', height='50%', loc='lower right',  borderpad=0.4)
 makes_plots_pretty(fig.axes)
 
@@ -78,6 +82,6 @@ learning_curves_ax.set_yticks([0, 20, 40, 60, 80, 100])
 # raw_data_ax.xaxis.set_label_text("")
 # raw_data_ax.set_yticks([0, 20, 40, 60, 80, 100])
 # raw_data_ax.set_xticklabels([])
-data_directory = 'W:\\upgrade\\'
+data_directory = 'W:\\thesis\\'
 plt.savefig(data_directory + 'Fig1_no_diagram.pdf', transparent=True, bbox_inches='tight')
 plt.show()

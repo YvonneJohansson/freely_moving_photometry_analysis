@@ -40,16 +40,16 @@ def prep_data_for_learning_curve(DS_name, ans_to_remove, protocols_selected=['Au
     df_to_plot.FirstPokeCorrect = first_poke_correct_frame.fillna(value=0)
     df_to_plot = df_to_plot[df_to_plot['Contingency'] == 1]
     df_to_plot["TrialIndexBinned200"] = (df_to_plot.CumulativeTrialNumberByProtocol // 200) * 200 + 100
-
-    for mouse in manipulation_days['mouse_id'].unique():
-        all_manipulation_days = manipulation_days[manipulation_days['mouse_id'] == mouse]
-        earliest_manipulation_day = all_manipulation_days.min()
-        index_to_remove = df_to_plot[np.logical_and((df_to_plot['AnimalID'] == mouse),
-                                                    (df_to_plot['FullSessionTime'] >= earliest_manipulation_day['date']))].index
-        if index_to_remove.shape[0] > 0:
-            dates_being_removed = df_to_plot['FullSessionTime'][index_to_remove].unique()
-            df_to_plot = df_to_plot.drop(index=index_to_remove)
-            print('removing {}, {}'.format(mouse, dates_being_removed))
+    if 'Auditory' in protocols_selected:
+        for mouse in manipulation_days['mouse_id'].unique():
+            all_manipulation_days = manipulation_days[manipulation_days['mouse_id'] == mouse]
+            earliest_manipulation_day = all_manipulation_days.min()
+            index_to_remove = df_to_plot[np.logical_and((df_to_plot['AnimalID'] == mouse),
+                                                        (df_to_plot['FullSessionTime'] >= earliest_manipulation_day['date']))].index
+            if index_to_remove.shape[0] > 0:
+                dates_being_removed = df_to_plot['FullSessionTime'][index_to_remove].unique()
+                df_to_plot = df_to_plot.drop(index=index_to_remove)
+                print('removing {}, {}'.format(mouse, dates_being_removed))
     return df_to_plot
 
 
@@ -74,6 +74,26 @@ def discrimination_final_session(df_for_plot):
     final_session = {'mouse': mice_for_df, 'tone cloud': side, '% right choices': percents}
     final_session_df = pd.DataFrame(final_session)
     return final_session_df
+
+
+def get_psychometric_sessions(data_set):
+    df_for_plot = prep_data_for_learning_curve(data_set, [], protocols_selected=['Aud_Psycho'])
+    mice = df_for_plot.AnimalID.unique()
+    proportions_all_mice = []
+    for mouse in mice:
+        mouse_df = df_for_plot[df_for_plot['AnimalID'] == mouse]
+        proportions = mouse_df.groupby('TrialHighPerc')['FirstPoke'].value_counts(normalize=True) * 100
+        prop_2 = proportions.xs(2.0, level=1)  # indexes 2.0 into the second level of index
+        reindexed = prop_2.reset_index(drop=False)
+        prop_df = pd.DataFrame(reindexed)
+        prop_df['mouse'] = mouse
+        proportions_all_mice.append(prop_df)
+    proportions_df = pd.concat(proportions_all_mice, ignore_index=True)
+    proportions_df['TrialHighPerc'] = 100 - proportions_df['TrialHighPerc']
+    proportions_df = proportions_df.rename(
+        columns={'TrialHighPerc': 'Percentage low tones', 'FirstPoke': 'Percentage rightwards choices'})
+    return proportions_df
+
 
 
 def find_percentage_choices_to_side(df_for_plot, side):

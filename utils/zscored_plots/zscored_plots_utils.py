@@ -112,7 +112,7 @@ def get_all_mouse_data_for_site(site):
     return data
 
 
-def plot_average_trace_all_mice(contra_ax, ipsi_ax, rew_ax, unrew_ax, site, error_bar_method='sem', colour='navy'):
+def plot_average_trace_all_mice(contra_ax, ipsi_ax, rew_ax, unrew_ax, site, error_bar_method='sem', colour='navy', x_range=[-1.5, 1.5]):
     all_data = get_all_mouse_data_for_site(site)
     time_stamps = all_data['time_stamps']
     data = dict(all_data)
@@ -122,6 +122,12 @@ def plot_average_trace_all_mice(contra_ax, ipsi_ax, rew_ax, unrew_ax, site, erro
         mean_trace = decimate(np.mean(traces, axis=0), 10)
         time_points = decimate(time_stamps, 10)
         traces = decimate(traces, 10)
+        mean_trace = mean_trace[int(traces.shape[1] / 2) + int(x_range[0] * 1000): int(traces.shape[1] / 2) + int(
+            x_range[1] * 1000)]
+        time_points = time_points[int(traces.shape[1] / 2) + int(x_range[0] * 1000): int(traces.shape[1] / 2) + int(
+            x_range[1] * 1000)]
+        traces = traces[:, int(traces.shape[1] / 2) + int(x_range[0] * 1000): int(traces.shape[1] / 2) + int(
+            x_range[1] * 1000)]
         axs[trace_type].plot(time_points, mean_trace, lw=1, color=colour)# color='navy')
 
         if error_bar_method is not None:
@@ -137,7 +143,7 @@ def plot_average_trace_all_mice(contra_ax, ipsi_ax, rew_ax, unrew_ax, site, erro
         axs[trace_type].set_ylabel('z-score')
         axs[trace_type].set_xlim([-1.5, 1.5])
 
-def plot_heat_map(ax, data, white_dot_point, dff_range=None):
+def plot_heat_map(ax, data, white_dot_point, dff_range=None, x_range=[-1.5, 1.5]):
     data.sorted_next_poke[-1] = np.nan
     arr1inds = white_dot_point.argsort()
     data.reaction_times = data.reaction_times[arr1inds]
@@ -146,9 +152,10 @@ def plot_heat_map(ax, data, white_dot_point, dff_range=None):
     data.sorted_next_poke = data.sorted_next_poke[arr1inds]
 
     my_cmap = ListedColormap(sns.color_palette("YlGnBu_r",256))
-    heat_im = ax.imshow(data.sorted_traces, aspect='auto',
-                        extent=[-10, 10, data.sorted_traces.shape[0], 0], cmap='viridis')
-
+    traces = data.sorted_traces
+    clipped_traces = traces[:, int(traces.shape[1] / 2) + int(x_range[0] * 10000): int(traces.shape[1] / 2) + int(x_range[1] * 10000)]
+    heat_im = ax.imshow(clipped_traces, aspect='auto',
+                        extent=[x_range[0], x_range[1], clipped_traces.shape[0], 0], cmap='viridis')
 
     ax.axvline(0, color='w', linewidth=1)
 
@@ -157,7 +164,6 @@ def plot_heat_map(ax, data, white_dot_point, dff_range=None):
     ax.scatter(data.sorted_next_poke,
                np.arange(data.sorted_next_poke.shape[0]) + 0.5, color='k', s=0.5)
     ax.tick_params(labelsize=8)
-    ax.set_xlim(data.params.plot_range)
     ax.set_ylim([data.sorted_traces.shape[0], 0])
     ax.set_xlabel('Time (s)')
     ax.set_ylabel('Trial (sorted)')

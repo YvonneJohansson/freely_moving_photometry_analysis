@@ -88,7 +88,7 @@ def get_regression_data_for_plot(recording_site='tail'):
 
 
 def make_example_figure(ax1, ax2):
-    axs= [ax1, ax2]
+    axs = [ax1, ax2]
     mice_dates = pd.DataFrame(
         {'mouse': ['SNL_photo17', 'SNL_photo35', ], 'date': ['20200206', '20201121', ], 'site': ['tail', 'Nacc'],
          'inds': [np.arange(39100, 39300), np.arange(112450, 112650)]})
@@ -104,10 +104,12 @@ def make_example_figure(ax1, ax2):
         time_stamps['high_cues_ind'] = np.where(mouse_data['high_cues'] == 1)
         time_stamps['contra_ind'] = np.where(mouse_data['contra_choices'] == 1)
         time_stamps['low_cues_ind'] = np.where(mouse_data['low_cues'] == 1)
-        axs[ind].plot(mouse_data['dff'], color='gray', label='trace')
-        axs[ind].plot(mouse_data['choice_pred'], label='choice kernel', color='#b7094c')
-        axs[ind].plot(mouse_data['cue_pred'], label='cue kernel', color='#90be6d')
-        axs[ind].plot(mouse_data['outcome_pred'], label='outcome kernel', color='#89c2d9')
+        predicted_trace = mouse_data['choice_pred'] + mouse_data['cue_pred'] + mouse_data['outcome_pred']
+        axs[ind].plot(mouse_data['dff'], color='k', label='trace')
+        #axs[ind].plot(mouse_data['choice_pred'], label='choice kernel', color='#b7094c')
+        #axs[ind].plot(mouse_data['cue_pred'], label='cue kernel', color='#90be6d')
+        #axs[ind].plot(mouse_data['outcome_pred'], label='outcome kernel', color='#89c2d9')
+        axs[ind].plot(predicted_trace, label='predicted trace', color='gray')
         axs[ind].legend()
         axs[ind].axvline(time_stamps['rewards_ind'][0], color='k', lw=0.8)
         axs[ind].text(time_stamps['rewards_ind'][0], -0.1, 'reward', transform=axs[ind].get_xaxis_transform(), size=6)
@@ -217,14 +219,14 @@ def get_data_both_sites_for_predictor(nacc_data, tail_data, predictor):
     return df
 
 
-def make_box_plot(df, fig_ax,  dx ='site', dy = 'explained variance', ort = "v", pal = "Set2", set_ylims=False, label=None):
+def make_box_plot(df, fig_ax,  dx ='site', dy = 'explained variance', ort = "v", pal = "Set2", set_ylims=False, label=None, scatter_size=4):
     sns.stripplot( x = dx, y = dy, data = df, palette = pal, edgecolor = "white",
-                     size = 5, jitter = 1, zorder = 0, orient = ort, ax=fig_ax)
+                     size = scatter_size, jitter = 1, zorder = 0, orient = ort, ax=fig_ax)
     sns.boxplot( x = dx, y = dy, data = df, color = "black", width = .5, zorder = 10,linewidth=0.5, \
                 showcaps = True, boxprops = {'facecolor':'none', "zorder":10},\
                 showfliers=False, whiskerprops = {'linewidth':0.5, "zorder":10},\
                    saturation = 1, orient = ort, ax=fig_ax)
-    fig_ax.set_xlim([-0.5, 1.5])
+    #fig_ax.set_xlim([-0.5, 1.5])
     if set_ylims:
         fig_ax.set_ylim([-2, np.max(df[dy]) + 2])
     if label:
