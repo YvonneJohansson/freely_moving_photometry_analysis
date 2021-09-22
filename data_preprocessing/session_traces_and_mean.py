@@ -9,7 +9,7 @@ import pandas as pd
 import os
 
 def get_all_experimental_records():
-    experiment_record = pd.read_csv('W:\\photometry_2AC\\experimental_record.csv')
+    experiment_record = pd.read_csv('/mnt/winstor/swc/sjones/users/Matt/photometry_2AC/experimental_record _matt.csv')
     experiment_record['date'] = experiment_record['date'].astype(str)
     return experiment_record
 
