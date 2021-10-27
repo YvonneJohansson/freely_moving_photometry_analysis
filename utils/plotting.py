@@ -127,7 +127,7 @@ def get_mean_and_sem(trial_data, demod_signal, params, norm_window=8, sort=False
     return x_vals, y_vals, sem, sorted_traces, sorted_last_event, state_name, title, sorted_next_poke
 
 
-def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', sort=False, mean_across_mice=False, xlims=[-2, 2], white_dot='default'):
+def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', sort=False, mean_across_mice=False, xlims=[-2, 2], white_dot='default', cue_vline=0):
     if mean_across_mice:
         fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(7.5, 4))
         fig.tight_layout(pad=1.3)
@@ -144,8 +144,8 @@ def heat_map_and_mean(aligned_session_data, *mean_data, error_bar_method='sem', 
     max_dff_contra = np.max(aligned_session_data.contra_data.sorted_traces)
     heatmap_min, heatmap_max = make_y_lims_same((min_dff_ipsi, max_dff_ipsi), (min_dff_contra, max_dff_contra))
     dff_range = (heatmap_min, heatmap_max)
-    ipsi_heatmap = plot_one_side(aligned_session_data.ipsi_data, fig, axs[1, 0], axs[1, 1], dff_range, error_bar_method=error_bar_method, sort=sort, white_dot=white_dot)
-    contra_heatmap = plot_one_side(aligned_session_data.contra_data, fig, axs[0, 0], axs[0, 1], dff_range, error_bar_method=error_bar_method, sort=sort, white_dot=white_dot)
+    ipsi_heatmap = plot_one_side(aligned_session_data.ipsi_data, fig, axs[1, 0], axs[1, 1], dff_range, error_bar_method=error_bar_method, sort=sort, white_dot=white_dot, cue_vline=cue_vline)
+    contra_heatmap = plot_one_side(aligned_session_data.contra_data, fig, axs[0, 0], axs[0, 1], dff_range, error_bar_method=error_bar_method, sort=sort, white_dot=white_dot, cue_vline=cue_vline)
     ylim_ipsi = axs[1, 0].get_ylim()
     ylim_contra = axs[0, 0].get_ylim()
     ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
@@ -194,7 +194,7 @@ def make_y_lims_same(ylim_ipsi, ylim_contra):
     return ylim_min, ylim_max
 
 
-def line_plot_dff(x_vals, y_vals, ax, x_range):
+def line_plot_dff(x_vals, y_vals, ax, x_range, cue_vline=0):
     ax.plot(x_vals, y_vals, color='#3F888F', lw=2)
     ax.axvline(0, color='k', linewidth=1)
     ax.set_xlabel('Time (s)')
@@ -202,7 +202,7 @@ def line_plot_dff(x_vals, y_vals, ax, x_range):
     ax.set_xlim(x_range)
 
 
-def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range=None, error_bar_method='sem', sort=False, white_dot='default'):
+def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range=None, error_bar_method='sem', sort=False, white_dot='default', cue_vline=0):
     mean_trace = decimate(one_side_data.mean_trace, 10)
     time_points = decimate(one_side_data.time_points, 10)
     traces = decimate(one_side_data.sorted_traces, 10)
@@ -217,6 +217,10 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range=None, error_bar_metho
 
 
     ax1.axvline(0, color='k', linewidth=1)
+    if cue_vline != 0:
+        ax1.axvline(cue_vline, color='k', linewidth=1, ls='--')
+    else:
+        pass
     ax1.set_xlim(one_side_data.params.plot_range)
     ax1.set_xlabel('Time (s)')
     ax1.set_ylabel('z-score')
