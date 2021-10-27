@@ -1,14 +1,15 @@
 import sys
 
-sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos\\Python_git')
-sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
+#sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos\\Python_git')
+#sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
+sys.path.insert(1, '/home/matthew/Documents/code/photometry_analysis_code/freely_moving_photometry_analysis')
 
 import nptdms
 import numpy as np
-from data_preprocessing.demodulation import lerner_deisseroth_preprocess
-from data_preprocessing.demodulation import demodulate
-import data_preprocessing.bpod_data_processing as bpod
-from data_preprocessing.session_traces_and_mean import get_all_experimental_records
+from demodulation import lerner_deisseroth_preprocess
+from demodulation import demodulate
+import bpod_data_processing as bpod
+from session_traces_and_mean import get_all_experimental_records
 import os
 from scipy.signal import medfilt, butter, filtfilt
 from scipy.stats import linregress
@@ -129,7 +130,7 @@ def pre_process_experiment_pyphotometry(mouse, date, protocol):
 
     restructured_data = bpod.restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pulses)
 
-    saving_folder = 'W:\\photometry_2AC\\processed_data\\' + mouse + '\\'
+    saving_folder = '/mnt/winstor/swc/sjones/users/francesca/photometry_2AC/processed_data/' + mouse + '/'
     #saving_folder = 'C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\processed_data' + mouse + '\\'
     if not os.path.exists(saving_folder):
         os.makedirs(saving_folder)
@@ -156,8 +157,8 @@ def pre_process_experiments(experiments, method='pyphotometry', protocol='Two_Al
 
 
 if __name__ == "__main__":
-    mouse_ids = ['SNL_photo54'] #, 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
-    date = '20210806'
+    mouse_ids = ['SNL_photo59'] #, 'SNL_photo31', 'SNL_photo32', 'SNL_photo33', 'SNL_photo34', 'SNL_photo35']
+    date = '20211007'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
         if (mouse_id =='all') & (date == 'all'):
@@ -168,5 +169,5 @@ if __name__ == "__main__":
             experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
         elif (mouse_id != 'all') & (date != 'all'):
             experiments_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
-        pre_process_experiments(experiments_to_process, method='pyphotometry', protocol='Two_Alternative_Choice_Centre_Port_Hold')
+        pre_process_experiments(experiments_to_process, method='pyphotometry', protocol='Two_Alternative_Choice_CentrePortHold')
 
