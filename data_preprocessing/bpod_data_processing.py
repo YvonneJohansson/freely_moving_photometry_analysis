@@ -3,13 +3,13 @@ sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos\\Python_g
 sys.path.insert(0, 'C:\\Users\\francescag\\Documents\\SourceTree_repos')
 
 import os
-import bpod_open_ephys_analysis.utils.load_nested_structs as load_ns
+import utils.load_nested_structs as load_ns
 import numpy as np
 import pandas as pd
 import math
 
 def find_bpod_file(mouse, date, protocol_type):
-    Bpod_data_path = 'W:\\photometry_2AC\\bpod_data\\' + mouse + '\\' + protocol_type + '\\Session Data\\'
+    Bpod_data_path = '/mnt/winstor/swc/sjones/users/francesca/photometry_2AC/bpod_data/' + mouse + '/' + protocol_type + '/Session Data/'
     #Bpod_data_path = 'C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\bpod_data\\'+ mouse + '\\' + protocol_type + '\\Session Data\\'
     Bpod_file_search_tool = mouse + '_' + protocol_type + '_' + date
     files_in_bpod_path = os.listdir(Bpod_data_path)
@@ -30,17 +30,17 @@ def find_bpod_file(mouse, date, protocol_type):
         print('0 or more than 2 sessions that day!')
 
 def find_daq_file(mouse, date):
-    daq_data_path = 'W:\\photometry_2AC\\freely_moving_photometry_data\\' + mouse + '\\'
+    daq_data_path = '/mnt/winstor/swc/sjones/users/francesca/photometry_2AC/freely_moving_photometry_data/' + mouse + '/'
     #daq_data_path ='C:\\Users\\francescag\\Documents\\PhD_Project\\SNL_photo_photometry\\freely_moving_photometry_data\\' + mouse + '\\'
     folders_in_photo_path = os.listdir(daq_data_path)
     folders_on_that_day = [s for s in folders_in_photo_path if date in s]
 
     if len(folders_on_that_day) == 2:
-        main_session_file = daq_data_path + '\\' + folders_on_that_day[-1] + '\\' + 'AI.tdms'
+        main_session_file = daq_data_path + '/' + folders_on_that_day[-1] + '/' + 'AI.tdms'
         return main_session_file
         print('2 sessions that day')
     elif len(folders_on_that_day) == 1:
-        main_session_file = daq_data_path + '\\' + folders_on_that_day[-1] + '\\' + 'AI.tdms'
+        main_session_file = daq_data_path + '/' + folders_on_that_day[-1] + '/' + 'AI.tdms'
         return main_session_file
     else:
         print('0 or more than 2 sessions that day!')
@@ -108,6 +108,18 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
             trial_states - 1]
         state_info['Time start'] = state_timestamps[0:-1] + daq_trials_start_ttls[trial]
         state_info['Time end'] = state_timestamps[1:] + daq_trials_start_ttls[trial]
+
+        #added by Matt
+        state_info['Reward amount'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['RewardAmount']
+        state_info['Punish'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['Punish']
+        state_info['VariableCueDelay'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['VariableCueDelay']
+
+        loc_lastCueDelay = [i for i, state in enumerate(trial_states) if state == 3][-1]
+        loc_WaitForPortOut = [i for i, state in enumerate(trial_states) if state == 4][0]
+        TrialCueDelay = state_timestamps[loc_WaitForPortOut] - state_timestamps[loc_lastCueDelay]
+        state_info['TrialCueDelay'] = np.ones((num_states)) * TrialCueDelay
+
+
         #state_info['Start camera frame'] = find_nearest(clock_pulses, state_info['Time start'])
         #state_info['End camera frame'] = find_nearest(clock_pulses, state_info['Time end'])
         state_info['Response'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['ChosenSide'][trial]
