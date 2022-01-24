@@ -110,9 +110,10 @@ def restructure_bpod_timestamps(loaded_bpod_file, trial_start_ttls_daq, clock_pu
         state_info['Time end'] = state_timestamps[1:] + daq_trials_start_ttls[trial]
 
         #added by Matt
-        state_info['Reward amount'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['RewardAmount']
-        state_info['Punish'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['Punish']
-        state_info['VariableCueDelay'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['VariableCueDelay']
+        #state_info['Reward amount'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['RewardAmount']
+        #state_info['Punish'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['Punish']
+        #state_info['VariableCueDelay'] = np.ones((num_states)) * loaded_bpod_file['SessionData']['SettingsFile']['GUI']['VariableCueDelay']
+
 
         loc_lastCueDelay = [i for i, state in enumerate(trial_states) if state == 3][-1]
         loc_WaitForPortOut = [i for i, state in enumerate(trial_states) if state == 4][0]

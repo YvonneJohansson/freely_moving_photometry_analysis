@@ -6,38 +6,6 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.signal import decimate
 
-animalID = 'SNL_photo58'
-date = '20211206'
-
-inputDir = '/mnt/winstor/swc/sjones/users/Matt/photometry_2AC/processed_data/' + animalID
-
-fibre_side = 'left'
-
-params = {'state_type_of_interest': 3, # 5.5 = first incorrect choice
-    'outcome': 1, # correct or incorrect: 0 = incorrect, 1 = correct, 2 = both
-    'last_outcome': 0,  # NOT USED CURRENTLY
-    'no_repeats' : 0, # 0 = dont care, 1 = state only entered once,
-    'last_response': 0, # trial before: 0 = dont care. 1 = left, 2 = right
-    'align_to' : 'Time start', # time end or time start
-    'instance': -1, # only for no repeats = 0, -1 = last instance, 1 = first instance
-    'plot_range': [-6, 6],
-    'first_choice_correct': 1, # useful for non-punished trials 0 = dont care, 1 = only correct trials, (-1 = incorrect trials)
-    'cue': None}
-
-'''Plot parameters'''
-error_bars= 'sem'
-xlims = [-2, 3]
-cue_vline = 0
-
-
-
-session_bpod_data = pd.read_pickle(inputDir + '/' + animalID + '_' + date + '_restructured_data.pkl')
-photometry_trace = np.load(inputDir + '/' + animalID + '_' + date + '_smoothed_signal.npy')
-
-'''DATA MANIPULATION SECTION
- the following section defines function and classes used for manipulating and organising data in preparation for plotting'''
-
-
 
 def extract_relevant_trials(fibre_side, session_bpod_data, params):
 
@@ -68,7 +36,7 @@ def extract_relevant_trials(fibre_side, session_bpod_data, params):
 
     return all_trials, contra_trials, ipsi_trials
 
-def get_z_scored_traces(relevant_df, photometry_trace, pre_window=8, post_window=8):
+def get_z_scored_traces(relevant_df, photometry_trace, params, pre_window=8, post_window=8):
 
     z_scored_traces = []
 
@@ -77,7 +45,7 @@ def get_z_scored_traces(relevant_df, photometry_trace, pre_window=8, post_window
 
     relevant_traces = np.zeros((len(timestamps), (pre_window + post_window)*10000))
     for n, timestamp in enumerate(timestamps):
-        trace = photometry_trace[int(timestamp - pre_window*10000):int(timestamp + post_window*10000)]
+        trace = photometry_trace[(int(timestamp) - pre_window*10000):(int(timestamp) + post_window*10000)]
         relevant_traces[n, :] = stats.zscore(trace)
     z_scored_traces.append(relevant_traces)
     z_scored_traces = z_scored_traces[0]
@@ -103,16 +71,11 @@ class z_scored_traces(object):
     def __init__(self, relevant_df, photometry_trace, params):
         self.params = params
         self.df = relevant_df
-        self.z_scored_traces, self.time_points = get_z_scored_traces(relevant_df, photometry_trace, pre_window=8, post_window=8)
+        self.z_scored_traces, self.time_points = get_z_scored_traces(relevant_df, photometry_trace, self.params, pre_window=8, post_window=8)
         self.mean_trace = np.mean(self.z_scored_traces, axis=0)
         self.min = np.min(self.z_scored_traces)
         self.max = np.max(self.z_scored_traces)
 
-photometry_data = photometry_data(fibre_side, session_bpod_data, params, photometry_trace)
-
-
-'''PLOTTING SECTION
-the following section defines function and classes used for plotting data'''
 
 def make_y_lims_same(ylim_ipsi, ylim_contra):
     ylim_min = min(ylim_ipsi[0], ylim_contra[0])
@@ -187,10 +150,32 @@ def plot_one_side(one_side_data, fig,  ax1, ax2, dff_range=None, error_bar_metho
         heat_im.set_norm(norm)
     return heat_im
 
-def make_plot_and_heatmap(photometry_data, error_bar_method='sem', xlims=[-2, 2], cue_vline=0):
+def line_plot_dff(x_vals, y_vals, ind_traces, ax, x_range, cue_vline=0, error_bar_method='sem'):
+    ax.plot(x_vals, y_vals, color='#3F888F', lw=2)
 
-    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(5.5, 5.5))
-    fig.tight_layout(pad=2.1)
+    error_bar_lower, error_bar_upper = calculate_error_bars(y_vals,
+                                                            ind_traces,
+                                                            error_bar_method=error_bar_method)
+    ax.fill_between(x_vals, error_bar_lower, error_bar_upper, alpha=0.5,
+                     facecolor='#7FB5B5', linewidth=0)
+
+    ax.axvline(cue_vline, color='k', linewidth=1)
+    ax.set_xlabel('Time (s)')
+    ax.set_ylabel('z-score')
+    ax.set_xlim(x_range)
+
+def adjust_label_distances(ax, x_space, y_space):
+    ax.yaxis.set_label_coords(-y_space, 0.5)
+    ax.xaxis.set_label_coords(0.5, -x_space)
+
+def make_plot_and_heatmap(photometry_data, *mean_data, error_bar_method='sem', mean_across_mice=False, xlims=[-2, 2], cue_vline=0):
+
+    if mean_across_mice:
+        fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(7.5, 4))
+        fig.tight_layout(pad=1.3)
+    else:
+        fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(5.5, 5.5))
+        fig.tight_layout(pad=2.1)
 
     font = {'size': 10}
     matplotlib.rc('font', **font)
@@ -217,35 +202,25 @@ def make_plot_and_heatmap(photometry_data, error_bar_method='sem', xlims=[-2, 2]
     cb_ipsi.ax.set_title('z-score', fontsize=9, pad=2)
     cb_contra.ax.set_title('z-score', fontsize=9, pad=2)
 
-    '''if mean_across_mice:
+    if mean_across_mice:
         x_range = axs[0, 0].get_xlim()
         ipsi_data = mean_data[0]
         contra_data = mean_data[1]
-        line_plot_dff(aligned_session_data.ipsi_data.time_points, ipsi_data, axs[1, 2], x_range)
-        line_plot_dff(aligned_session_data.ipsi_data.time_points, contra_data, axs[0, 2], x_range)
+        mean_ipsi_data = mean_data[0].mean(axis=0)
+        mean_contra_data = mean_data[1].mean(axis=0)
+        line_plot_dff(photometry_data.ipsi_trials.time_points, mean_ipsi_data, ipsi_data, axs[1, 2], x_range, error_bar_method=error_bar_method)
+        line_plot_dff(photometry_data.contra_trials.time_points, mean_contra_data, contra_data, axs[0, 2], x_range, error_bar_method=error_bar_method)
         ylim_ipsi = axs[1, 2].get_ylim()
         ylim_contra = axs[0, 2].get_ylim()
         ylim_min, ylim_max = make_y_lims_same(ylim_ipsi, ylim_contra)
         axs[0, 2].set_ylim([ylim_min, ylim_max])
         axs[1, 2].set_ylim([ylim_min, ylim_max])
 
+
         for ax in [axs[0, 0], axs[1, 0]]:
             adjust_label_distances(ax, x_space=0.2, y_space=0.12)
         for ax in [axs[0, 1], axs[1, 1], axs[0, 2], axs[1, 2]]:
-            adjust_label_distances(ax, x_space=0.2, y_space=0.2)'''
+            adjust_label_distances(ax, x_space=0.2, y_space=0.2)
 
     return fig
-
-
-'''***PLOT IS CREATED FROM FUNCTION BELOW***'''
-
-make_plot_and_heatmap(photometry_data, error_bar_method=error_bars, xlims=xlims, cue_vline=cue_vline)
-
-
-
-
-
-
-
-
 
