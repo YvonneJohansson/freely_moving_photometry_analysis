@@ -14,12 +14,12 @@ reference_csv = pd.read_csv('/mnt/winstor/swc/sjones/users/francesca/photometry_
 generalDir = '/mnt/winstor/swc/sjones/users/francesca/photometry_2AC/processed_data/'
 GenOutputDir = '/home/matthew/Documents/figures/SNL_photo/'
 # list mice you want to create plots for
-animalIDs = ['SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo73', 'SNL_photo74', 'SNL_photo77']# 'SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74', 'SNL_photo77'
+animalIDs = ['SNL_photo71']# 'SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74', 'SNL_photo77'
 # list dates you want to create plots for
 # NOTE: plots will be created individually for each date, NOT multiple dates combined into a plot
-dates = ['20220121']
+dates = ['20220208']
 
-params = {'state_type_of_interest': 5, # 5.5 = first incorrect choice
+params = {'state_type_of_interest': 3, # 5.5 = first incorrect choice
     'outcome': 1, # correct or incorrect: 0 = incorrect, 1 = correct, 2 = both
     'last_outcome': 0,  # NOT USED CURRENTLY
     'no_repeats' : 0, # 0 = dont care, 1 = state only entered once,

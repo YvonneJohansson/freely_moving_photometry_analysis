@@ -7,7 +7,7 @@ from lineplot_and_heatmap_utils import *
 
 generalDir = '/mnt/winstor/swc/sjones/users/francesca/photometry_2AC/processed_data/'
 
-animalIDs = ['SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74']
+animalIDs = ['SNL_photo72']
 fibre_sides = ['right'] * 7
 dates = ['20220117']
 
