@@ -36,6 +36,37 @@ def extract_relevant_trials(fibre_side, session_bpod_data, params):
 
     return all_trials, contra_trials, ipsi_trials
 
+def extract_relevant_trials_psychometric(session_bpod_data, params):
+
+    state_of_int = session_bpod_data[(session_bpod_data['State type'] == params['state_type_of_interest'])]
+    if params['outcome'] == 1:
+        state_of_int = state_of_int[(state_of_int['First choice correct'] == 1)]
+    elif params['outcome'] == 0:
+        state_of_int = state_of_int[(state_of_int['First choice correct'] == 0)]
+    elif params['outcome'] == 2:
+        pass
+
+    if params['no_repeats'] == 0:
+        if params['instance'] == 1:
+            state_of_int = state_of_int.groupby('Trial num').first()
+        elif params['instance'] == -1:
+            state_of_int = state_of_int.groupby('Trial num').last()
+    elif params['no_repeats'] == 1:
+        state_of_int = state_of_int[(state_of_int['Max times in state'] == 1)]
+
+    all_trials = state_of_int
+
+    trials_98 = all_trials[(all_trials['Trial type'] == 1)]
+    trials_82 = all_trials[(all_trials['Trial type'] == 2)]
+    trials_66 = all_trials[(all_trials['Trial type'] == 3)]
+    trials_50 = all_trials[(all_trials['Trial type'] == 4)]
+    trials_34 = all_trials[(all_trials['Trial type'] == 5)]
+    trials_18 = all_trials[(all_trials['Trial type'] == 6)]
+    trials_2 = all_trials[(all_trials['Trial type'] == 7)]
+
+    return all_trials, trials_98, trials_82, trials_66, trials_50, trials_34, trials_18, trials_2
+
+
 def get_z_scored_traces(relevant_df, photometry_trace, params, pre_window=8, post_window=8):
 
     z_scored_traces = []
@@ -65,6 +96,25 @@ class photometry_data:
         self.all_trials = z_scored_traces(self.all_trials, self.photometry_trace, self.params)
         self.contra_trials = z_scored_traces(self.contra_trials, self.photometry_trace, self.params)
         self.ipsi_trials = z_scored_traces(self.ipsi_trials, self.photometry_trace, self.params)
+
+
+class photometry_data_psychometric:
+
+    def __init__(self, fibre_side, session_bpod_data, params, photometry_trace):
+        self.fibre_side = fibre_side
+        self.photometry_trace = photometry_trace
+        self.params = params
+        self.all_trials, self.trials_98, self.trials_82, self.trials_66, self.trials_50, self.trials_34, self.trials_18, self.trials_2 = extract_relevant_trials_psychometric(session_bpod_data, params)
+
+        self.all_trials = z_scored_traces(self.all_trials, self.photometry_trace, self.params)
+        self.trials_98 = z_scored_traces(self.trials_98, self.photometry_trace, self.params)
+        self.trials_82 = z_scored_traces(self.trials_82, self.photometry_trace, self.params)
+        self.trials_66 = z_scored_traces(self.trials_66, self.photometry_trace, self.params)
+        self.trials_50 = z_scored_traces(self.trials_50, self.photometry_trace, self.params)
+        self.trials_34 = z_scored_traces(self.trials_34, self.photometry_trace, self.params)
+        self.trials_18 = z_scored_traces(self.trials_18, self.photometry_trace, self.params)
+        self.trials_2 = z_scored_traces(self.trials_2, self.photometry_trace, self.params)
+
 
 class z_scored_traces(object):
 

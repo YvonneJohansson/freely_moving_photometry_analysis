@@ -157,8 +157,8 @@ def pre_process_experiments(experiments, method='pyphotometry', protocol='Two_Al
 
 
 if __name__ == "__main__":
-    mouse_ids = ['SNL_photo71'] #'SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74', 'SNL_photo77'
-    date = '20220208'
+    mouse_ids = ['SNL_photo68', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72'] #'SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74', 'SNL_photo77'
+    date = '20220214'
     for mouse_id in mouse_ids:
         all_experiments = get_all_experimental_records()
         if (mouse_id =='all') & (date == 'all'):
@@ -169,5 +169,5 @@ if __name__ == "__main__":
             experiments_to_process = all_experiments[all_experiments['mouse_id'] == mouse_id]
         elif (mouse_id != 'all') & (date != 'all'):
             experiments_to_process = all_experiments[(all_experiments['date'] == date) & (all_experiments['mouse_id'] == mouse_id)]
-        pre_process_experiments(experiments_to_process, method='pyphotometry', protocol='Value_Change_Two_Alternative_Choice')
+        pre_process_experiments(experiments_to_process, method='pyphotometry', protocol='Two_Alternative_Choice')
 

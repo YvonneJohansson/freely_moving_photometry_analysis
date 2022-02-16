@@ -1,3 +1,4 @@
+import sys
 sys.path.append( '/home/matthew/Documents/code/photometry_analysis_code/freely_moving_photometry_analysis/post_processing(matt)/utils' )
 
 import os
@@ -8,7 +9,7 @@ from lineplot_and_heatmap_utils import *
 
 generalDir = '/mnt/winstor/swc/sjones/users/francesca/photometry_2AC/processed_data/'
 
-animalIDs = ['SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74']
+animalIDs = ['SNL_photo68', 'SNL_photo70'] # 'SNL_photo68', 'SNL_photo69', 'SNL_photo70', 'SNL_photo71', 'SNL_photo72', 'SNL_photo73', 'SNL_photo74'
 fibre_sides = ['right'] * len(animalIDs)
 recording_site = 'tail'
 dates = ['20220113'] *len(animalIDs) #'20220121', '20220121', '20220121', '20220121', '20220124', '20220121', '20220121'
